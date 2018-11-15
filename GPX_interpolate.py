@@ -18,7 +18,7 @@ import scipy.interpolate as sp
 
 # global variables
 interpolate_res = 1 # interpolation resolution in meters
-interpolate_deg = 2 # interpolation degree N (N = 1 for linear interpolation, 2 < N <= 5 for B-spline interpolation)
+interpolate_deg = 2 # interpolation degree N (N = 1 for linear interpolation, 2 <= N <= 5 for B-spline interpolation)
 
 # functions
 def GPX_read(file): # read lat, lon, ele and timestamps data from GPX file
