@@ -8,7 +8,13 @@ Interpolate GPS data (latitude, longitude, elevation, time) using linear/B-splin
 * Run `python3 GPX_interpolate.py`
 * The interpolated GPS data is saved to a CSV file `file_interpolated.csv` in the current directory
 
-Example with `interpolate_deg = 2`:
+In `GPX_interpolate.py`:
+
+`interpolate_res` is the interpolation resolution in meters
+
+`interpolate_deg` is the B-spline degree (use `interpolate_deg = 1` for linear interpolation)
+
+Example with `interpolate_res = 1` and `interpolate_deg = 2`:
 
 ![plot.png](plot.png)
 
@@ -20,4 +26,5 @@ Example with `interpolate_deg = 2`:
 
 ## ToDo:
 
+* Add command-line arguments for `GPX_files`, `interpolate_res` and `interpolate_deg`
 * Implement `GPX_write()` function
