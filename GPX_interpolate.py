@@ -15,7 +15,6 @@ import math
 
 import numpy as np
 import scipy.interpolate as sp
-import matplotlib.pyplot as plt # debug
 
 # global variables
 interpolate_res = 1 # interpolation resolution in meters
@@ -166,12 +165,6 @@ def main():
         print('reading '+file+'...')
         (lat, lon, ele, timestamps) = GPX_read(file)
 
-        # downsample for testing
-        lat = lat[::60]
-        lon = lon[::60]
-        ele = ele[::60]
-        timestamps = timestamps[::60]
-
         print('interpolating GPX data...')
         (lat_new, lon_new, ele_new, timestamps_new) = GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
 
@@ -182,12 +175,6 @@ def main():
         CSV_write(file, lat_new, lon_new, ele_new, timestamps_new)
 
         print('done!')
-
-        plt.figure()
-        plt.plot((6371e3)*np.radians(lon_new), (6371e3)*np.log(np.tan(np.radians(lat_new)/2+math.pi/4)), 'r', marker = None)
-        plt.scatter((6371e3)*np.radians(lon), (6371e3)*np.log(np.tan(np.radians(lat)/2+math.pi/4)), c = 'black', marker = '.')
-        plt.axis('equal')
-        plt.show()
 
 if __name__ == '__main__':
     # execute only if run as a script
