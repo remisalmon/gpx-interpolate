@@ -11,7 +11,6 @@ salmon.remi@gmail.com
 import glob
 import re
 import datetime
-import math
 
 import numpy as np
 import scipy.interpolate as sp
@@ -87,17 +86,17 @@ def GPX_calculate_dist(lat, lon, ele): # calculate distance between trackpoints
     dist = np.zeros(lat.shape)
 
     for t in range(len(lat)-1):
-        lat1 = math.radians(lat[t])
-        lat2 = math.radians(lat[t+1])
-        lon1 = math.radians(lon[t])
-        lon2 = math.radians(lon[t+1])
+        lat1 = np.radians(lat[t])
+        lat2 = np.radians(lat[t+1])
+        lon1 = np.radians(lon[t])
+        lon2 = np.radians(lon[t+1])
 
         # haversine formula
         delta_lat = lat2-lat1
         delta_lon = lon2-lon1
 
-        a = math.pow(math.sin(delta_lat/2), 2)+math.cos(lat1)*math.cos(lat2)*math.pow(math.sin(delta_lon/2), 2)
-        c = 2.0*math.atan2(math.sqrt(a), math.sqrt(1-a))
+        a = np.power(np.sin(delta_lat/2), 2)+np.cos(lat1)*np.cos(lat2)*np.power(np.sin(delta_lon/2), 2)
+        c = 2.0*np.arctan2(np.sqrt(a), np.sqrt(1-a))
 
         dist[t+1] = (6371e3)*c
 
