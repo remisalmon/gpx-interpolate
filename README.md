@@ -20,9 +20,9 @@ Example with `interpolate_res = 1` and `interpolate_deg = 2`:
 
 ## Python dependencies:
 
-* Python 3 (tested with Python 3.7.0)
-* NumPy
-* SciPy
+* Python >= 3.7.0
+* NumPy >= 1.15.4
+* SciPy >= 1.1.0
 
 ## ToDo:
 
