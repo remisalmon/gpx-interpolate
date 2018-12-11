@@ -64,17 +64,15 @@ def GPX_read(file): # read lat, lon, ele and timestamps data from GPX file
 
     return(lat, lon, ele, timestamps)
 
-def GPX_write(file, file_new, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to GPX file
-    #file_new = file[:-4]+'_interpolated.gpx'
+def GPX_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to GPX file
+    #file_interp = file[:-4]+'_interpolated.gpx'
 
     # TODO
 
     return
 
 def CSV_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to CVS file
-    file_new = file[:-4]+'_interpolated.csv'
-
-    with open(file_new, 'w') as f:
+    with open(file, 'w') as f:
         for t in range(len(lat_new)):
             date = datetime.datetime.fromtimestamp(timestamps_new[t]).strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -141,6 +139,7 @@ def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
         out = sp.splev(unew, tck)
 
         timestamps_new = out[0]
+
     elif interpolate_deg == 1: # linear interpolation
         data = (lat, lon, ele, timestamps)
 
@@ -155,6 +154,12 @@ def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
         ele_new = out[2]
         timestamps_new = out[3]
 
+    else:
+        lat_new = lat
+        lon_new = lon
+        ele_new = ele
+        timestamps_new = timestamps
+
     return(lat_new, lon_new, ele_new, timestamps_new)
 
 def main():
@@ -167,11 +172,11 @@ def main():
         print('interpolating GPX data...')
         (lat_new, lon_new, ele_new, timestamps_new) = GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
 
-        #print('writing '+file[:-4]+'_interpolated.gpx...')
-        #GPX_write(file, lat_new, lon_new, ele_new, timestamps_new)
+        file_interp = file[:-4]+'_interpolated.csv'
 
-        print('writing '+file[:-4]+'_interpolated.csv...')
-        CSV_write(file, lat_new, lon_new, ele_new, timestamps_new)
+        print('writing '+file_interp+'...')
+
+        CSV_write(file_interp, lat_new, lon_new, ele_new, timestamps_new)
 
         print('done!')
 
