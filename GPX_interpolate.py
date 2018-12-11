@@ -5,8 +5,6 @@ Remi Salmon, 2018
 salmon.remi@gmail.com
 """
 
-#!/usr/bin/env python3
-
 # imports
 import glob
 import re
@@ -15,7 +13,7 @@ import datetime
 import numpy as np
 import scipy.interpolate as sp
 
-# global variables
+# parameters
 interpolate_res = 1 # interpolation resolution in meters
 interpolate_deg = 2 # interpolation degree N (N = 1 for linear interpolation, 2 <= N <= 5 for B-spline interpolation)
 
@@ -73,10 +71,10 @@ def GPX_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpol
 
 def CSV_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to CVS file
     with open(file, 'w') as f:
-        f.write('lat,lon,ele,time\n')
+        f.write('lat,lon,ele,time\n') # header
 
         for t in range(len(lat_new)):
-            date = datetime.datetime.fromtimestamp(timestamps_new[t]).strftime('%Y-%m-%dT%H:%M:%SZ')
+            date = datetime.datetime.fromtimestamp(timestamps_new[t]).strftime('%Y-%m-%dT%H:%M:%SZ') # re-format timestamp
 
             f.write(str(lat_new[t])+','+str(lon_new[t])+','+str(ele_new[t])+','+date+'\n')
 
@@ -146,7 +144,7 @@ def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
         ele_new = out[2]
         timestamps_new = out[3]
 
-    else:
+    else: # default to input arguments if parameters are out of range
         lat_new = lat
         lon_new = lon
         ele_new = ele
