@@ -102,22 +102,12 @@ def GPX_calculate_dist(lat, lon, ele): # calculate distance between trackpoints
 
     return(dist)
 
-def calculate_norm_cum_dist(dist): # calculate normalized cumulative distance from distance data
-    norm_cum_dist = np.zeros(dist.shape)
-
-    for t in range(len(dist)-1):
-        norm_cum_dist[t+1] = norm_cum_dist[t]+dist[t+1]
-
-    norm_cum_dist = norm_cum_dist/dist.sum()
-
-    return(norm_cum_dist)
-
 def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg):
     # get distance data
     dist = GPX_calculate_dist(lat, lon, ele)
 
-    # get normalized cumulative distance
-    norm_cum_dist = calculate_norm_cum_dist(dist)
+    # calculate normalized cumulative distance
+    norm_cum_dist = np.cumsum(dist)/np.sum(dist)
 
     # interpolate
     if interpolate_deg > 1 and interpolate_deg <= 5: # B-spline interpolation
