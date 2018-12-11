@@ -73,6 +73,8 @@ def GPX_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpol
 
 def CSV_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to CVS file
     with open(file, 'w') as f:
+        f.write('lat,lon,time\n')
+
         for t in range(len(lat_new)):
             date = datetime.datetime.fromtimestamp(timestamps_new[t]).strftime('%Y-%m-%dT%H:%M:%SZ')
 
