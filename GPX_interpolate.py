@@ -1,8 +1,7 @@
 """
 GPX_interpolate.py
 
-Remi Salmon, 2018
-salmon.remi@gmail.com
+Remi Salmon - salmon.remi@gmail.com - 2018
 """
 
 # imports
@@ -47,10 +46,10 @@ def GPX_read(file): # read lat, lon, ele and timestamps data from GPX file
             elif '<time' in line:
                 tmp = re.findall('\d+.*Z', line)
 
-                tmp = datetime.datetime.strptime(tmp[0], '%Y-%m-%dT%H:%M:%SZ')
+                date = datetime.datetime.strptime(tmp[0], '%Y-%m-%dT%H:%M:%SZ') # format string to datetime object
 
                 if gpx_read_time:
-                    timestamps.append(tmp.timestamp())
+                    timestamps.append(date.timestamp())
                 else:
                     gpx_read_time = True
 
@@ -63,20 +62,18 @@ def GPX_read(file): # read lat, lon, ele and timestamps data from GPX file
     return(lat, lon, ele, timestamps)
 
 def GPX_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to GPX file
-    #file_interp = file[:-4]+'_interpolated.gpx'
-
     # TODO
 
     return
 
 def CSV_write(file, lat_new, lon_new, ele_new, timestamps_new): # write interpolated data to CVS file
-    with open(file, 'w') as f:
-        f.write('lat,lon,ele,time\n') # header
+    with open(file, 'w') as file:
+        file.write('lat,lon,ele,time\n') # header
 
         for t in range(len(lat_new)):
-            date = datetime.datetime.fromtimestamp(timestamps_new[t]).strftime('%Y-%m-%dT%H:%M:%SZ') # re-format timestamp
+            date = datetime.datetime.fromtimestamp(timestamps_new[t]).strftime('%Y-%m-%dT%H:%M:%SZ') # re-format timestamp to string
 
-            f.write(str(lat_new[t])+','+str(lon_new[t])+','+str(ele_new[t])+','+date+'\n')
+            file.write(str(lat_new[t])+','+str(lon_new[t])+','+str(ele_new[t])+','+date+'\n')
 
     return
 
@@ -96,7 +93,7 @@ def GPX_calculate_dist(lat, lon, ele): # calculate distance between trackpoints
         a = np.power(np.sin(delta_lat/2), 2)+np.cos(lat1)*np.cos(lat2)*np.power(np.sin(delta_lon/2), 2)
         c = 2.0*np.arctan2(np.sqrt(a), np.sqrt(1-a))
 
-        dist[t+1] = (6371e3)*c
+        dist[t+1] = 6371e3*c
 
     return(dist)
 
