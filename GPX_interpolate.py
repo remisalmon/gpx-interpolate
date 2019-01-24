@@ -155,25 +155,26 @@ def main():
     GPX_files = glob.glob('*.gpx')
 
     for gpx_file in GPX_files:
-        print('reading '+gpx_file+'...')
-        (lat, lon, ele, timestamps) = GPX_read(gpx_file)
-
-        print('interpolating GPX data...')
-        (lat_new, lon_new, ele_new, timestamps_new) = GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
-
-        output_file = gpx_file[:-4]+'_interpolated.gpx'
-
-        print('writing '+output_file+'...')
-
-        GPX_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
-
-        output_file = gpx_file[:-4]+'_interpolated.csv'
-
-        print('writing '+output_file+'...')
-
-        CSV_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
-
-        print('done!')
+        if not gpx_file[-17:] == '_interpolated.gpx':
+            print('reading '+gpx_file+'...')
+            (lat, lon, ele, timestamps) = GPX_read(gpx_file)
+        
+            print('interpolating GPX data...')
+            (lat_new, lon_new, ele_new, timestamps_new) = GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
+        
+            output_file = gpx_file[:-4]+'_interpolated.gpx'
+        
+            print('writing '+output_file+'...')
+        
+            GPX_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
+        
+            output_file = gpx_file[:-4]+'_interpolated.csv'
+        
+            print('writing '+output_file+'...')
+        
+            CSV_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
+        
+            print('done!')
 
 if __name__ == '__main__':
     # execute only if run as a script
