@@ -48,7 +48,7 @@ def GPX_read(gpx_file): # read lat, lon, ele and timestamps data from GPX file
     # convert to NumPy arrays
     lat = np.array(lat)
     lon = np.array(lon)
-    ele = np.array(lat)
+    ele = np.array(ele)
     timestamps = np.array(timestamps)
 
     return(lat, lon, ele, timestamps)
@@ -102,12 +102,6 @@ def GPX_calculate_dist(lat, lon, ele): # calculate distance between trackpoints
     return(dist)
 
 def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg):
-    # get distance data
-    dist = GPX_calculate_dist(lat, lon, ele)
-
-    # calculate normalized cumulative distance
-    norm_cum_dist = np.cumsum(dist)/np.sum(dist)
-
     # interpolate
     if interpolate_res <= 0:
         print('WARNING: interpolate_res must be positive, skipping interpolation')
@@ -124,6 +118,13 @@ def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
         timestamps_new = timestamps
 
     else:
+        # calculate distance data
+        dist = GPX_calculate_dist(lat, lon, ele)
+
+        # calculate normalized cumulative distance
+        norm_cum_dist = np.cumsum(dist)/np.sum(dist)
+
+        # interpolate spatial data
         data = (lat, lon, ele)
 
         (tck, u) = sp.splprep(x = data, u = norm_cum_dist, k = interpolate_deg, s = 0, nest = lat.shape[0]+interpolate_deg+1)
@@ -136,7 +137,7 @@ def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
         lon_new = out[1]
         ele_new = out[2]
 
-        # ensure we interpolate timestamps linearly to preserve monotonicity
+        # interpolate time data linearly to preserve monotonicity
         data = (timestamps, timestamps) # splprep does not accept 1D inputs...
 
         (tck, u) = sp.splprep(x = data, u = norm_cum_dist, k = 1, s = 0, nest = lat.shape[0]+1+1)
@@ -149,7 +150,7 @@ def GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
 
 def main():
     # parameters
-    interpolate_res = 5 # interpolation resolution in meters
+    interpolate_res = 5 # interpolation resolution (in meters)
     interpolate_deg = 2 # interpolation degree N (N = 1 for linear interpolation, 2 <= N <= 5 for B-spline interpolation)
 
     GPX_files = glob.glob('*.gpx')
@@ -158,23 +159,23 @@ def main():
         if not gpx_file[-17:] == '_interpolated.gpx':
             print('reading '+gpx_file+'...')
             (lat, lon, ele, timestamps) = GPX_read(gpx_file)
-        
+
             print('interpolating GPX data...')
             (lat_new, lon_new, ele_new, timestamps_new) = GPX_interpolate(lat, lon, ele, timestamps, interpolate_res, interpolate_deg)
-        
+
             output_file = gpx_file[:-4]+'_interpolated.gpx'
-        
+
             print('writing '+output_file+'...')
-        
+
             GPX_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
-        
-            output_file = gpx_file[:-4]+'_interpolated.csv'
-        
-            print('writing '+output_file+'...')
-        
-            CSV_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
-        
-            print('done!')
+
+            #output_file = gpx_file[:-4]+'_interpolated.csv'
+
+            #print('writing '+output_file+'...')
+
+            #CSV_write(output_file, lat_new, lon_new, ele_new, timestamps_new)
+
+            print('done')
 
 if __name__ == '__main__':
     # execute only if run as a script
