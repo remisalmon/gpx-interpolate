@@ -6,12 +6,12 @@ Python function to interpolate GPX data (latitude, longitude, elevation, time) u
 
 ### GPX_interpolate() function
 
-`(lat_interp, lon_interp, ele_interp, tstamps_interp) = GPX_interpolate(lat, lon, ele, tstamps, res, deg)`
+`(lat_interp, lon_interp, ele_interp, tstamp_interp) = GPX_interpolate(lat, lon, ele, tstamp, res, deg)`
 
 where:
 
 `lat`, `lon` and `ele` are the GPX latitude, logitude and elevation data (as NumPy arrays)  
-`tstamps` is a numpy array of the timestamps of the GPX time data (in seconds)  
+`tstamp` is a numpy array of the timestamps of the GPX time data (in seconds)  
 `res` is the interpolation spatial resolution (in meters)  
 `deg` is the interpolation polynomial resolution (1 for linear interpolation, 2-5 for spline interpolation)
 
@@ -29,7 +29,7 @@ In `GPX_interpolate.py`, set:
 `interpolate_deg`: the B-spline degree (between 2 and 5, set to 1 for linear interpolation)
 
 ### Example
-With `interpolate_res = 1; interpolate_deg = 2`:  
+With `interpolate_res = 1; interpolate_deg = 2` (:black_circle: = original GPX data, :red_circle: = interpolated data):  
 ![plot.png](plot.png)
 
 ## Python dependencies
