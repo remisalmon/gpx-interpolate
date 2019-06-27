@@ -74,7 +74,7 @@ def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
         # remove insignificant digits
         lat_new = np.round(lat_new*1e6)/1e6
         lon_new = np.round(lon_new*1e6)/1e6
-        ele_new = np.round(lon_new*1e1)/1e1
+        ele_new = np.round(ele_new*1e1)/1e1
         #tstamp_new = np.round(tstamp_new) # uncomment to round tstamp_new to seconds
 
     return(lat_new, lon_new, ele_new, tstamp_new)
