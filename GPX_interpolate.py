@@ -46,7 +46,7 @@ def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
         # interpolate spatial data
         data = (lat, lon, ele)
 
-        (tck, u) = sp.splprep(x = data, u = norm_cum_dist, k = interpolate_deg, s = 0, nest = lat.shape[0]+interpolate_deg+1)
+        (tck, u) = sp.splprep(x = data, u = norm_cum_dist, k = int(interpolate_deg), s = 0, nest = lat.shape[0]+interpolate_deg+1)
 
         unew = np.linspace(0, 1, int(dist.sum()/interpolate_res+1))
 
