@@ -28,15 +28,9 @@ import scipy.interpolate as sp
 
 # functions
 def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
-    if interpolate_res <= 0:
-        print('WARNING: interpolate_res must be positive, skipping interpolation')
-        lat_new = lat
-        lon_new = lon
-        ele_new = ele
-        tstamp_new = tstamp
+    if not 1 <= interpolate_deg <= 5:
+        print('ERROR: interpolate_deg out of [1-5] range, skipping interpolation')
 
-    elif interpolate_deg < 1 or interpolate_deg > 5:
-        print('WARNING: interpolate_deg out of [1-5] range, skipping interpolation')
         lat_new = lat
         lon_new = lon
         ele_new = ele
