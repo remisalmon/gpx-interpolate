@@ -24,7 +24,8 @@ import gpxpy
 import datetime
 
 import numpy as np
-import scipy.interpolate as sp
+
+from scipy.interpolate import splprep, splev
 
 # functions
 def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
@@ -46,11 +47,11 @@ def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
         # interpolate spatial data
         data = (lat, lon, ele)
 
-        (tck, u) = sp.splprep(x = data, u = norm_cum_dist, k = int(interpolate_deg), s = 0, nest = lat.shape[0]+interpolate_deg+1)
+        (tck, u) = splprep(x = data, u = norm_cum_dist, k = int(interpolate_deg), s = 0, nest = lat.shape[0]+interpolate_deg+1)
 
         unew = np.linspace(0, 1, int(dist.sum()/interpolate_res+1))
 
-        out = sp.splev(unew, tck)
+        out = splev(unew, tck)
 
         lat_new = out[0]
         lon_new = out[1]
@@ -59,9 +60,9 @@ def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
         # interpolate time data linearly to preserve monotonicity
         data = (tstamp, tstamp) # splprep does not accept 1D inputs...
 
-        (tck, u) = sp.splprep(x = data, u = norm_cum_dist, k = 1, s = 0, nest = lat.shape[0]+1+1)
+        (tck, u) = splprep(x = data, u = norm_cum_dist, k = 1, s = 0, nest = lat.shape[0]+1+1)
 
-        out = sp.splev(unew, tck)
+        out = splev(unew, tck)
 
         tstamp_new = out[0]
 
@@ -83,18 +84,18 @@ def GPX_calculate_dist(lat, lon, ele): # calculate distance between trackpoints
         lon2 = np.radians(lon[i])
 
         # haversine formula
-        delta_lat = lat2-lat1
-        delta_lon = lon2-lon1
+        delta_lat = np.abs(lat2-lat1)
+        delta_lon = np.abs(lon2-lon1)
 
-        a = np.power(np.sin(delta_lat/2.0), 2)+np.cos(lat1)*np.cos(lat2)*np.power(np.sin(delta_lon/2.0), 2)
-        c = 2.0*np.arctan2(np.sqrt(a), np.sqrt(1.0-a))
+        a = np.sin(delta_lat/2)**2+np.cos(lat1)*np.cos(lat2)*np.sin(delta_lon/2)**2
+        c = 2*np.arctan2(np.sqrt(a), np.sqrt(1-a))
 
-        delta_d = 6371e3*c
+        dist_lat_lon = 6371e3*c
 
         # calculate elevation change
-        delta_ele = ele[i]-ele[i-1]
+        dist_ele = ele[i]-ele[i-1]
 
-        dist[i] = np.sqrt(np.power(delta_d, 2)+np.power(delta_ele, 2))
+        dist[i] = np.sqrt(dist_lat_lon**2+dist_ele**2)
 
     return(dist)
 
@@ -139,7 +140,7 @@ def GPX_write(gpx_file, lat_new, lon_new, ele_new, tstamp_new): # write interpol
     with open(gpx_file, 'w') as file:
         file.write(gpx.to_xml())
 
-    return
+    return()
 
 def CSV_write(csv_file, lat_new, lon_new, ele_new, tstamp_new): # write interpolated data to CVS file
     with open(csv_file, 'w') as file:
@@ -150,9 +151,9 @@ def CSV_write(csv_file, lat_new, lon_new, ele_new, tstamp_new): # write interpol
 
             file.write(str(lat_new[i])+','+str(lon_new[i])+','+str(ele_new[i])+','+date+'\n')
 
-    return
+    return()
 
-def main():
+def GPX_test():
     interpolate_res = 0.5 # interpolation resolution (in meters)
     interpolate_deg = 2 # interpolation degree N (N = 1 for linear interpolation, 2 <= N <= 5 for spline interpolation)
 
@@ -181,5 +182,4 @@ def main():
             print('done')
 
 if __name__ == '__main__':
-    # execute only if run as a script
-    main()
+    GPX_test()
