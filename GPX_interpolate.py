@@ -30,7 +30,7 @@ from scipy.interpolate import splprep, splev
 # functions
 def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
     if not 1 <= interpolate_deg <= 5:
-        print('ERROR: interpolate_deg out of [1-5] range, skipping interpolation')
+        print('ERROR interpolate_deg out of [1-5] range, skipping interpolation')
 
         lat_new = lat
         lon_new = lon
@@ -70,7 +70,7 @@ def GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg):
         lat_new = np.round(lat_new*1e6)/1e6
         lon_new = np.round(lon_new*1e6)/1e6
         ele_new = np.round(ele_new*1e1)/1e1
-        #tstamp_new = np.round(tstamp_new) # uncomment to round tstamp_new to seconds
+        tstamp_new = np.round(tstamp_new)
 
     return(lat_new, lon_new, ele_new, tstamp_new)
 
@@ -162,9 +162,11 @@ def GPX_test():
     for gpx_file in GPX_files:
         if not gpx_file[-17:] == '_interpolated.gpx':
             print('reading '+gpx_file+'...')
+
             (lat, lon, ele, tstamp) = GPX_read(gpx_file)
 
             print('interpolating GPX data...')
+
             (lat_new, lon_new, ele_new, tstamp_new) = GPX_interpolate(lat, lon, ele, tstamp, interpolate_res, interpolate_deg)
 
             output_file = gpx_file[:-4]+'_interpolated.gpx'
