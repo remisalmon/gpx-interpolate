@@ -10,8 +10,8 @@ Python function to interpolate GPX data (latitude, longitude, elevation, time) u
 
 where:
 
-`lat`, `lon` and `ele` are the GPX latitude, logitude and elevation data (as NumPy arrays)  
-`tstamp` is a numpy array of the timestamps of the GPX time data (in seconds)  
+`lat`, `lon` and `ele` are the GPX latitude, logitude and elevation data (as Nx1 NumPy arrays)  
+`tstamp` is the GPX timestamps in seconds (as a Nx1 NumPy array)  
 `res` is the interpolation spatial resolution (in meters)  
 `deg` is the interpolation polynomial resolution (`1` for linear interpolation, `2-5` for spline interpolation)
 
