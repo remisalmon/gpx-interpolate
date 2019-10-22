@@ -121,12 +121,6 @@ def GPX_read(gpx_file): # read lat, lon, ele and tstamp data from GPX file
                     ele.append(point.elevation)
                     tstamp.append(point.time.timestamp())
 
-    # convert to NumPy arrays
-    lat = np.array(lat)
-    lon = np.array(lon)
-    ele = np.array(ele)
-    tstamp = np.array(tstamp)
-
     return(lat, lon, ele, tstamp)
 
 def GPX_write(gpx_file, lat, lon, ele, tstamp): # write interpolated data to GPX file
