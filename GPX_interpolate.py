@@ -33,12 +33,12 @@ EARTH_RADIUS = 6371e3 # meters
 # functions
 def GPX_interpolate(lat, lon, ele, tstamp, res, deg):
     if not 1 <= deg <= 5:
-        print('ERROR deg out of [1-5] range, skipping interpolation')
+        print('warning: deg out of [1-5] range, skipping interpolation')
 
         return(lat, lon, ele, tstamp)
 
-    elif not len(lat) == len(lon) == len(ele) == len(tstamp):
-        print('ERROR data input size mismatch, skipping interpolation')
+    elif not len(lat) > int(deg):
+        print('warning: number of data points must be superior to deg, skipping interpolation')
 
         return(lat, lon, ele, tstamp)
 
@@ -74,7 +74,7 @@ def GPX_interpolate(lat, lon, ele, tstamp, res, deg):
         # remove insignificant digits
         lat_interp = np.round(lat_interp*1e6)/1e6
         lon_interp = np.round(lon_interp*1e6)/1e6
-        ele_interp = np.round(ele_interp*1e1)/1e1
+        ele_interp = np.round(ele_interp*1e6)/1e6
         tstamp_interp = np.round(tstamp_interp)
 
     return(lat_interp, lon_interp, ele_interp, tstamp_interp)
@@ -175,7 +175,7 @@ def main():
 
             GPX_write(output_file, lat_interp, lon_interp, ele_interp, tstamp_interp)
 
-            print('done')
+    print('done')
 
 if __name__ == '__main__':
     from glob import glob

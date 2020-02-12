@@ -12,11 +12,11 @@ from GPX_interpolate import GPX_interpolate
 lat_interp, lon_interp, ele_interp, tstamp_interp = GPX_interpolate(lat, lon, ele, tstamp, res, deg)
 ```
 
-where:  
-`lat`, `lon` and `ele` are the GPX latitude, logitude and elevation data (array-like)  
-`tstamp` is the GPX time data in epoch time (array-like)  
-`res` is the interpolation spatial resolution (in meters)  
-`deg` is the interpolation polynomial resolution (`1` for linear interpolation, `2-5` for spline interpolation)
+where:
+`lat`, `lon` and `ele` are the GPX latitude, logitude and elevation data (array-like)
+`tstamp` is the GPX time data in epoch time (array-like)
+`res` is the interpolation spatial resolution (in meters)
+`deg` is the interpolation polynomial degree (`1` for linear interpolation, `2-5` for spline interpolation)
 
 ### GPX_interpolate.py script
 
@@ -28,13 +28,13 @@ To run as a script:
 * The interpolated GPX data is saved to a new `_interpolated.gpx` GPX file
 
 ### Example
-With `res = 1; deg = 2` (:black_circle: = original GPX data, :red_circle: = interpolated data):  
+With `res = 1; deg = 2` (:black_circle: = original GPX data, :red_circle: = interpolated data):
 ![plot.png](plot.png)
 
 ## Python dependencies
 
 ```
-numpy==1.15.4
-scipy==1.1.0
-gpxpy==1.3.4
+numpy==1.18.1
+scipy==1.4.1
+gpxpy==1.4.0
 ```
