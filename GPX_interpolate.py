@@ -31,80 +31,101 @@ from scipy.interpolate import splprep, splev
 EARTH_RADIUS = 6371e3 # meters
 
 # functions
-def GPX_interpolate(lat, lon, ele, tstamp, res, deg):
-    if not 1 <= deg <= 5:
-        print('warning: deg out of [1-5] range, skipping interpolation')
+def GPX_interpolate(lat, lon, ele, tstamp, res, deg = 1):
+    # input: lat = list[float]
+    #        lon = list[float]
+    #        ele = list[float]
+    #        tsamp = list[float]
+    #        res = float
+    #        deg = int
+    # output: lat_interp = list[float]
+    #         lon_interp = list[float]
+    #         ele_interp = list[float]
+    #         tsamp_interp = list[float]
+
+    if not type(deg) == int:
+        print('warning: deg must be int, skipping interpolation')
 
         return(lat, lon, ele, tstamp)
 
-    elif not len(lat) > int(deg):
+    if not 1 <= deg <= 5:
+        print('warning: deg must be in [1-5] range, skipping interpolation')
+
+        return(lat, lon, ele, tstamp)
+
+    if not len(lat) > deg:
         print('warning: number of data points must be superior to deg, skipping interpolation')
 
         return(lat, lon, ele, tstamp)
 
-    else:
-        # calculate distance data
-        dist = GPX_calculate_dist(lat, lon, ele)
+    dist = GPX_calculate_dist(lat, lon, ele) # dist between points
 
-        # calculate normalized cumulative distance
-        dist_cum_norm = np.cumsum(dist)/np.sum(dist)
+    dist_cum_norm = np.cumsum(dist)/np.sum(dist) # normalized cumulative dist between points
 
-        # interpolate spatial data
-        data = [lat, lon, ele]
+    # interpolate spatial data
+    data = [lat, lon, ele]
 
-        tck, _ = splprep(x = data, u = dist_cum_norm, k = int(deg), s = 0, nest = len(lat)+deg+1)
+    tck, _ = splprep(x = data, u = dist_cum_norm, k = deg, s = 0, nest = len(lat)+deg+1)
 
-        u_interp = np.linspace(0, 1, 1+int(np.sum(dist)/res))
+    u_interp = np.linspace(0, 1, 1+int(np.sum(dist)/res))
 
-        out = splev(u_interp, tck)
+    data_interp = splev(u_interp, tck)
 
-        lat_interp = out[0]
-        lon_interp = out[1]
-        ele_interp = out[2]
+    lat_interp = data_interp[0]
+    lon_interp = data_interp[1]
+    ele_interp = data_interp[2]
 
-        # interpolate time data linearly to preserve monotonicity
-        data = [tstamp, tstamp] # splprep does not accept 1D inputs...
+    # interpolate time data linearly to preserve monotonicity
+    data = [tstamp, tstamp] # splprep does not accept 1D inputs...
 
-        tck, _ = splprep(x = data, u = dist_cum_norm, k = 1, s = 0, nest = len(lat)+deg+1)
+    tck, _ = splprep(x = data, u = dist_cum_norm, k = 1, s = 0, nest = len(lat)+deg+1)
 
-        out = splev(u_interp, tck)
+    data_interp = splev(u_interp, tck)
 
-        tstamp_interp = out[0]
+    tstamp_interp = data_interp[0]
 
-        # remove insignificant digits
-        lat_interp = np.round(lat_interp*1e6)/1e6
-        lon_interp = np.round(lon_interp*1e6)/1e6
-        ele_interp = np.round(ele_interp*1e6)/1e6
-        tstamp_interp = np.round(tstamp_interp)
+    # remove insignificant digits
+    lat_interp = np.round(lat_interp*1e6)/1e6
+    lon_interp = np.round(lon_interp*1e6)/1e6
+    ele_interp = np.round(ele_interp*1e6)/1e6
+    tstamp_interp = np.round(tstamp_interp*1e2)/1e2 # round to hundredth of seconds
 
-    return(lat_interp, lon_interp, ele_interp, tstamp_interp)
+    return(lat_interp.tolist(), lon_interp.tolist(), ele_interp.tolist(), tstamp_interp.tolist())
 
-def GPX_calculate_dist(lat, lon, ele): # calculate distance between trackpoints
+def GPX_calculate_dist(lat, lon, ele):
+    # input: lat = list[float]
+    #        lon = list[float]
+    #        ele = list[float]
+    # output: dist = numpy.array[float]
+
     dist = np.zeros(len(lat))
 
-    for i in np.arange(1, len(lat)):
+    for i in np.arange(1, len(dist)):
         lat1 = np.radians(lat[i-1])
         lon1 = np.radians(lon[i-1])
         lat2 = np.radians(lat[i])
         lon2 = np.radians(lon[i])
 
-        # haversine formula
         delta_lat = np.abs(lat2-lat1)
         delta_lon = np.abs(lon2-lon1)
 
-        c = 2.0*np.arcsin(np.sqrt(np.sin(delta_lat/2.0)**2+np.cos(lat1)*np.cos(lat2)*np.sin(delta_lon/2.0)**2))
+        c = 2.0*np.arcsin(np.sqrt(np.sin(delta_lat/2.0)**2+np.cos(lat1)*np.cos(lat2)*np.sin(delta_lon/2.0)**2)) # haversine formula
 
-        dist_lat_lon = EARTH_RADIUS*c
+        dist_lat_lon = EARTH_RADIUS*c # great-circle distance
 
-        # calculate elevation change
-        dist_ele = ele[i]-ele[i-1]
+        dist_ele = ele[i]-ele[i-1] # elevation change
 
         dist[i] = np.sqrt(dist_lat_lon**2+dist_ele**2)
 
     return(dist)
 
-def GPX_read(gpx_file): # read lat, lon, ele and tstamp data from GPX file
-    # initialize lists
+def GPX_read(gpx_file):
+    # input: gpx_file = str
+    # output: lat = list[float]
+    #         lon = list[float]
+    #         ele = list[float]
+    #         tsamp = list[float]
+
     lat = []
     lon = []
     ele = []
@@ -123,7 +144,14 @@ def GPX_read(gpx_file): # read lat, lon, ele and tstamp data from GPX file
 
     return(lat, lon, ele, tstamp)
 
-def GPX_write(gpx_file, lat, lon, ele, tstamp): # write interpolated data to GPX file
+def GPX_write(gpx_file, lat, lon, ele, tstamp):
+    # input: gpx_file = str
+    #        lat = list[float]
+    #        lon = list[float]
+    #        ele = list[float]
+    #        tsamp = list[float]
+    # output: None
+
     gpx = gpxpy.gpx.GPX()
     gpx_track = gpxpy.gpx.GPXTrack()
     gpx_segment = gpxpy.gpx.GPXTrackSegment()
@@ -140,38 +168,26 @@ def GPX_write(gpx_file, lat, lon, ele, tstamp): # write interpolated data to GPX
     with open(gpx_file, 'w') as file:
         file.write(gpx.to_xml())
 
-    return()
+    return(None)
 
-def CSV_write(csv_file, lat, lon, ele, tstamp): # write interpolated data to CVS file
-    with open(csv_file, 'w') as file:
-        file.write('lat,lon,ele,time\n') # header
-
-        for i in range(len(lat)):
-            date = datetime.fromtimestamp(tstamp[i]).strftime('%Y-%m-%dT%H:%M:%SZ') # re-format timestamp to string
-
-            file.write(str(lat[i])+','+str(lon[i])+','+str(ele[i])+','+date+'\n')
-
-    return()
-
+# main
 def main():
     res = 0.5 # interpolation resolution (in meters)
-    deg = 2 # interpolation degree N (N = 1 for linear interpolation, 2 <= N <= 5 for spline interpolation)
+    deg = 2 # interpolation degree (1 for linear interpolation, 2-5 for spline interpolation)
 
-    GPX_files = glob('*.gpx')
+    gpx_files = glob('*.gpx')
 
-    for GPX_file in GPX_files:
-        if not GPX_file[-17:] == '_interpolated.gpx':
-            print('reading '+GPX_file+'...')
+    for gpx_file in gpx_files:
+        if not gpx_file[-17:] == '_interpolated.gpx':
+            print('reading {}...'.format(gpx_file))
 
-            lat, lon, ele, tstamp = GPX_read(GPX_file)
-
-            print('interpolating GPX data...')
+            lat, lon, ele, tstamp = GPX_read(gpx_file)
 
             lat_interp, lon_interp, ele_interp, tstamp_interp = GPX_interpolate(lat, lon, ele, tstamp, res, deg)
 
-            output_file = GPX_file[:-4]+'_interpolated.gpx'
+            output_file = gpx_file[:-4]+'_interpolated.gpx'
 
-            print('writing '+output_file+'...')
+            print('writing {}...'.format(output_file))
 
             GPX_write(output_file, lat_interp, lon_interp, ele_interp, tstamp_interp)
 
