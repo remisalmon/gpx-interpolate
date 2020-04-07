@@ -31,7 +31,7 @@ from scipy.interpolate import splprep, splev
 EARTH_RADIUS = 6371e3 # meters
 
 # functions
-def GPX_interpolate(lat, lon, ele, tstamp, res, deg = 1):
+def gpx_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     # input: lat = list[float]
     #        lon = list[float]
     #        ele = list[float]
@@ -44,21 +44,15 @@ def GPX_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     #         tsamp_interp = list[float]
 
     if not type(deg) == int:
-        print('warning: deg must be int, skipping interpolation')
-
-        return(lat, lon, ele, tstamp)
+        raise TypeError('deg must be int')
 
     if not 1 <= deg <= 5:
-        print('warning: deg must be in [1-5] range, skipping interpolation')
-
-        return(lat, lon, ele, tstamp)
+        raise ValueError('deg must be in [1-5]')
 
     if not len(lat) > deg:
-        print('warning: number of data points must be superior to deg, skipping interpolation')
+        raise Warning('number of data points must be > deg')
 
-        return(lat, lon, ele, tstamp)
-
-    dist = GPX_calculate_dist(lat, lon, ele) # dist between points
+    dist = gpx_calculate_dist(lat, lon, ele) # dist between points
 
     dist_cum_norm = np.cumsum(dist)/np.sum(dist) # normalized cumulative dist between points
 
@@ -78,7 +72,7 @@ def GPX_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     # interpolate time data linearly to preserve monotonicity
     data = [tstamp, tstamp] # splprep does not accept 1D inputs...
 
-    tck, _ = splprep(x = data, u = dist_cum_norm, k = 1, s = 0, nest = len(lat)+deg+1)
+    tck, _ = splprep(x = data, u = dist_cum_norm, k = 1, s = 0, nest = len(lat)+1+1)
 
     data_interp = splev(u_interp, tck)
 
@@ -90,9 +84,9 @@ def GPX_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     ele_interp = np.round(ele_interp*1e6)/1e6
     tstamp_interp = np.round(tstamp_interp*1e2)/1e2 # round to hundredth of seconds
 
-    return(lat_interp.tolist(), lon_interp.tolist(), ele_interp.tolist(), tstamp_interp.tolist())
+    return lat_interp.tolist(), lon_interp.tolist(), ele_interp.tolist(), tstamp_interp.tolist()
 
-def GPX_calculate_dist(lat, lon, ele):
+def gpx_calculate_dist(lat, lon, ele):
     # input: lat = list[float]
     #        lon = list[float]
     #        ele = list[float]
@@ -117,9 +111,9 @@ def GPX_calculate_dist(lat, lon, ele):
 
         dist[i] = np.sqrt(dist_lat_lon**2+dist_ele**2)
 
-    return(dist)
+    return dist
 
-def GPX_read(gpx_file):
+def gpx_read(gpx_file):
     # input: gpx_file = str
     # output: lat = list[float]
     #         lon = list[float]
@@ -142,9 +136,9 @@ def GPX_read(gpx_file):
                     ele.append(point.elevation)
                     tstamp.append(point.time.timestamp())
 
-    return(lat, lon, ele, tstamp)
+    return lat, lon, ele, tstamp
 
-def GPX_write(gpx_file, lat, lon, ele, tstamp):
+def gpx_write(gpx_file, lat, lon, ele, tstamp):
     # input: gpx_file = str
     #        lat = list[float]
     #        lon = list[float]
@@ -161,39 +155,45 @@ def GPX_write(gpx_file, lat, lon, ele, tstamp):
     gpx_track.segments.append(gpx_segment)
 
     for i in range(len(lat)):
-        gpx_point = gpxpy.gpx.GPXTrackPoint(lat[i], lon[i], ele[i], datetime.fromtimestamp(tstamp[i]))
+        gpx_point = gpxpy.gpx.GPXTrackPoint(lat[i],
+                                            lon[i],
+                                            ele[i],
+                                            datetime.fromtimestamp(tstamp[i]))
 
         gpx_segment.points.append(gpx_point)
 
     with open(gpx_file, 'w') as file:
         file.write(gpx.to_xml())
 
-    return(None)
+    return None
 
 # main
 def main():
-    res = 0.5 # interpolation resolution (in meters)
-    deg = 2 # interpolation degree (1 for linear interpolation, 2-5 for spline interpolation)
+    import argparse
 
-    gpx_files = glob('*.gpx')
+    parser = argparse.ArgumentParser(description = 'Interpolate GPX file(s) using linear/spline interpolation')
 
-    for gpx_file in gpx_files:
+    parser.add_argument('gpx_files', type = str, metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
+    parser.add_argument('-d', '--deg', type = int, default = 1, help = 'Interpolation degree, 1=linear, 2-5=spline (default: 1)')
+    parser.add_argument('-r', '--res', type = float, default = 1, help = 'Interpolation resolution in meters (default: 1)')
+
+    args = parser.parse_args()
+
+    for gpx_file in args.gpx_files:
         if not gpx_file[-17:] == '_interpolated.gpx':
-            print('reading {}...'.format(gpx_file))
+            print('Reading {}...'.format(gpx_file))
 
-            lat, lon, ele, tstamp = GPX_read(gpx_file)
+            lat, lon, ele, tstamp = gpx_read(gpx_file)
 
-            lat_interp, lon_interp, ele_interp, tstamp_interp = GPX_interpolate(lat, lon, ele, tstamp, res, deg)
+            lat_interp, lon_interp, ele_interp, tstamp_interp = gpx_interpolate(lat, lon, ele, tstamp, args.res, args.deg)
 
             output_file = gpx_file[:-4]+'_interpolated.gpx'
 
-            print('writing {}...'.format(output_file))
+            print('Writing {}...'.format(output_file))
 
-            GPX_write(output_file, lat_interp, lon_interp, ele_interp, tstamp_interp)
+            gpx_write(output_file, lat_interp, lon_interp, ele_interp, tstamp_interp)
 
-    print('done')
+    print('Done')
 
 if __name__ == '__main__':
-    from glob import glob
-
     main()
