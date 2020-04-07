@@ -7,7 +7,6 @@ Interpolate latitude, longitude, elevation and time stamps at any spatial resolu
 ## Usage
 
 ### Module
-
 ```python
 from gpx_interpolate import gpx_interpolate
 
@@ -18,10 +17,9 @@ where:
 `lat`, `lon` and `ele` are the GPX latitude, longitude and elevation data (array-like)  
 `tstamp` is the GPX time data in epoch time (array-like)  
 `res` is the interpolation spatial resolution in meters (float)  
-`deg` is the interpolation polynomial degree: `1` for linear interpolation (default) or `2-5` for spline interpolation (int)
+`deg` is the interpolation degree (int): `1` for linear interpolation (default) or `2-5` for spline interpolation
 
 ### Script
-
 ```
 usage: gpx_interpolate.py [-h] [-d DEG] [-r RES] FILE [FILE ...]
 
@@ -37,11 +35,10 @@ optional arguments:
 ```
 
 ### Example
-With `res = 1, deg = 2` (:black_circle: = original GPX data, :red_circle: = interpolated data):
-![plot.png](plot.png)
+:black_circle: = original GPX data, :red_circle: = interpolated data  
+![plot.png](plot.png)  
 
 ## Python dependencies
-
 ```
 numpy==1.18.1
 scipy==1.4.1
