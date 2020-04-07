@@ -24,7 +24,6 @@ import gpxpy
 import numpy as np
 
 from datetime import datetime
-
 from scipy.interpolate import splprep, splev
 
 # constants
@@ -43,14 +42,17 @@ def gpx_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     #         ele_interp = list[float]
     #         tsamp_interp = list[float]
 
-    if not type(deg) == int:
+    if not type(deg) is int:
         raise TypeError('deg must be int')
 
     if not 1 <= deg <= 5:
         raise ValueError('deg must be in [1-5]')
 
     if not len(lat) > deg:
-        raise Warning('number of data points must be > deg')
+        raise ValueError('number of data points must be > deg')
+
+    if not len(lat) == len(lon) == len(ele) == len(tstamp):
+        raise ValueError('lat, lon, ele, tstamp must have same lenght')
 
     dist = gpx_calculate_dist(lat, lon, ele) # dist between points
 
@@ -181,7 +183,7 @@ def main():
 
     for gpx_file in args.gpx_files:
         if not gpx_file[-17:] == '_interpolated.gpx':
-            print('Reading {}...'.format(gpx_file))
+            print('Reading {}'.format(gpx_file))
 
             lat, lon, ele, tstamp = gpx_read(gpx_file)
 
@@ -189,7 +191,7 @@ def main():
 
             output_file = gpx_file[:-4]+'_interpolated.gpx'
 
-            print('Writing {}...'.format(output_file))
+            print('Writing {}'.format(output_file))
 
             gpx_write(output_file, lat_interp, lon_interp, ele_interp, tstamp_interp)
 
