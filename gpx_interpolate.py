@@ -84,7 +84,7 @@ def gpx_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     lat_interp = np.round(lat_interp*1e6)/1e6
     lon_interp = np.round(lon_interp*1e6)/1e6
     ele_interp = np.round(ele_interp*1e6)/1e6
-    tstamp_interp = np.round(tstamp_interp*1e2)/1e2 # round to hundredth of seconds
+    tstamp_interp = np.round(tstamp_interp*1e2)/1e2
 
     return lat_interp.tolist(), lon_interp.tolist(), ele_interp.tolist(), tstamp_interp.tolist()
 
@@ -102,8 +102,8 @@ def gpx_calculate_dist(lat, lon, ele):
         lat2 = np.radians(lat[i])
         lon2 = np.radians(lon[i])
 
-        delta_lat = np.abs(lat2-lat1)
-        delta_lon = np.abs(lon2-lon1)
+        delta_lat = lat2-lat1
+        delta_lon = lon2-lon1
 
         c = 2.0*np.arcsin(np.sqrt(np.sin(delta_lat/2.0)**2+np.cos(lat1)*np.cos(lat2)*np.sin(delta_lon/2.0)**2)) # haversine formula
 
@@ -186,7 +186,6 @@ def main():
             print('Reading {}'.format(gpx_file))
 
             lat, lon, ele, tstamp = gpx_read(gpx_file)
-
             lat_interp, lon_interp, ele_interp, tstamp_interp = gpx_interpolate(lat, lon, ele, tstamp, args.res, args.deg)
 
             output_file = gpx_file[:-4]+'_interpolated.gpx'
