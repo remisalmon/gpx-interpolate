@@ -120,7 +120,8 @@ def gpx_read(gpx_file):
     gpx_data = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':None}
 
     i = 0
-    i_latlon = i_tstamp = []
+    i_latlon = []
+    i_tstamp = []
 
     with open(gpx_file, 'r') as file:
         gpx = gpxpy.parse(file)
