@@ -25,14 +25,19 @@ optional arguments:
 ```python
 from gpx_interpolate import gpx_interpolate
 
-lat_interp, lon_interp, ele_interp, tstamp_interp = gpx_interpolate(lat, lon, ele, tstamp, res, deg)
+gpx_data = dict{'lat':lat, 'lon':lon, 'ele':ele, 'tstamp':tstamp, 'tzinfo':tzinfo}
+
+gpx_data = gpx_interpolate(gpx_data, res, deg)
 ```
 
-where:
-`lat`, `lon` and `ele` are the GPX latitude, longitude and elevation data (array-like)
-`tstamp` is the GPX time data in epoch time (array-like)
-`res` is the interpolation spatial resolution in meters (float)
-`deg` is the interpolation degree (int): `1` for linear interpolation (default) or `2-5` for spline interpolation
+where:  
+`lat`, `lon` and `ele` (optional) are the trackpoints latitude, longitude and elevation    
+`tstamp` (optional) is the trackpoints POSIX time  
+`tzinfo` (optional) is the timezone in `datetime.tzinfo` format (`None` for UTC)    
+`res` is the interpolation resolution in meters  
+`deg` is the interpolation in degree: `1` for linear interpolation (default) or `2-5` for spline interpolation  
+
+`ele` and `tstamp` are optional and can be set to `None`
 
 ### Example
 :black_circle: = original GPX data, :red_circle: = interpolated data
