@@ -1,23 +1,10 @@
 # gpx_interpolate.py
 
-Python module/script to interpolate GPX files using linear or spline interpolation
+Python script to interpolate GPX files using linear or spline interpolation
 
-Interpolate latitude, longitude, elevation and time stamps at any spatial resolution
+Interpolates latitude, longitude and elevation at any spatial resolution
 
 ## Usage
-
-### Module
-```python
-from gpx_interpolate import gpx_interpolate
-
-lat_interp, lon_interp, ele_interp, tstamp_interp = gpx_interpolate(lat, lon, ele, tstamp, res, deg)
-```
-
-where:
-`lat`, `lon` and `ele` are the GPX latitude, longitude and elevation data (array-like)  
-`tstamp` is the GPX time data in epoch time (array-like)  
-`res` is the interpolation spatial resolution in meters (float)  
-`deg` is the interpolation degree (int): `1` for linear interpolation (default) or `2-5` for spline interpolation
 
 ### Script
 ```
@@ -34,9 +21,23 @@ optional arguments:
   -r RES, --res RES  Interpolation resolution in meters (default: 1)
 ```
 
+### Module
+```python
+from gpx_interpolate import gpx_interpolate
+
+lat_interp, lon_interp, ele_interp, tstamp_interp = gpx_interpolate(lat, lon, ele, tstamp, res, deg)
+```
+
+where:
+`lat`, `lon` and `ele` are the GPX latitude, longitude and elevation data (array-like)
+`tstamp` is the GPX time data in epoch time (array-like)
+`res` is the interpolation spatial resolution in meters (float)
+`deg` is the interpolation degree (int): `1` for linear interpolation (default) or `2-5` for spline interpolation
+
 ### Example
-:black_circle: = original GPX data, :red_circle: = interpolated data  
-![plot.png](plot.png)  
+:black_circle: = original GPX data, :red_circle: = interpolated data
+
+![plot.png](plot.png)
 
 ## Python dependencies
 ```
