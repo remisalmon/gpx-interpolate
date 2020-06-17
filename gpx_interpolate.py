@@ -30,17 +30,11 @@ from scipy.interpolate import splprep, splev
 EARTH_RADIUS = 6371e3 # meters
 
 # functions
-def gpx_interpolate(lat, lon, ele, tstamp, res, deg = 1):
-    # input: lat = list[float]
-    #        lon = list[float]
-    #        ele = list[float]
-    #        tsamp = dict{'tdata':list[float], 'tzinfo':datetime.tzinfo}
+def gpx_interpolate(gpx_data, res, deg = 1):
+    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #        res = float
     #        deg = int
-    # output: lat_interp = list[float]
-    #         lon_interp = list[float]
-    #         ele_interp = list[float]
-    #         tsamp_interp = dict{'tdata':list[float], 'tzinfo':datetime.tzinfo}
+    # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
 
     if not type(deg) is int:
         raise TypeError('deg must be int')
@@ -48,84 +42,85 @@ def gpx_interpolate(lat, lon, ele, tstamp, res, deg = 1):
     if not 1 <= deg <= 5:
         raise ValueError('deg must be in [1-5]')
 
-    if not len(lat) > deg:
+    if not len(gpx_data['lat']) > deg:
         raise ValueError('number of data points must be > deg')
 
-    if not len(lat) == len(lon) == len(ele) == len(tstamp['tdata']):
-        raise ValueError('lat, lon, ele, tstamp must have the same length')
-
     # interpolate spatial data
-    dist = gpx_calculate_dist(lat, lon, ele) # dist between points
+    dist = gpx_calculate_dist(gpx_data) # dist between points
 
     dist_cum_norm = np.cumsum(dist)/np.sum(dist) # normalized cumulative dist between points
 
-    data = [lat, lon, ele]
+    x = [gpx_data['lat'], gpx_data['lon']]
+    if gpx_data['ele']:
+        x.append(gpx_data['ele'])
 
-    tck, _ = splprep(data, u = dist_cum_norm, k = deg, s = 0, nest = len(lat)+deg+1)
+    tck, _ = splprep(x, u = dist_cum_norm, k = deg, s = 0, nest = len(gpx_data['lat'])+deg+1)
 
     u_interp = np.linspace(0, 1, 1+int(np.sum(dist)/res))
+    x_interp = splev(u_interp, tck)
 
-    data_interp = splev(u_interp, tck)
-
-    lat_interp = data_interp[0]
-    lon_interp = data_interp[1]
-    ele_interp = data_interp[2]
+    lat_interp = x_interp[0]
+    lon_interp = x_interp[1]
+    if gpx_data['ele']:
+        ele_interp = x_interp[2]
 
     # interpolate time data linearly to preserve monotonicity
-    data = [tstamp['tdata'], tstamp['tdata']] # splprep does not accept 1D inputs...
+    if gpx_data['tstamp']:
+        x = [gpx_data['tstamp'], gpx_data['tstamp']]
 
-    tck, _ = splprep(data, u = dist_cum_norm, k = 1, s = 0, nest = len(lat)+1+1)
+        tck, _ = splprep(x, u = dist_cum_norm, k = 1, s = 0, nest = len(gpx_data['lat'])+1+1)
 
-    data_interp = splev(u_interp, tck)
+        x_interp = splev(u_interp, tck)
 
-    tstamp_interp = {'tdata':data_interp[0], 'tzinfo':tstamp['tzinfo']}
+        tstamp_interp = x_interp[0]
 
     # round precision to 1e-6
-    lat_interp = list(np.round(lat_interp*1e6)/1e6)
-    lon_interp = list(np.round(lon_interp*1e6)/1e6)
-    ele_interp = list(np.round(ele_interp*1e6)/1e6)
-    tstamp_interp['tdata'] = list(np.round(tstamp_interp['tdata']*1e6)/1e6)
+    gpx_data['lat'] = list(np.round(lat_interp*1e6)/1e6)
+    gpx_data['lon'] = list(np.round(lon_interp*1e6)/1e6)
+    if gpx_data['ele']:
+        gpx_data['ele'] = list(np.round(ele_interp*1e6)/1e6)
+    if gpx_data['tstamp']:
+        gpx_data['tstamp'] = list(np.round(tstamp_interp*1e6)/1e6)
 
-    return lat_interp, lon_interp, ele_interp, tstamp_interp
+    return gpx_data
 
-def gpx_calculate_dist(lat, lon, ele):
-    # input: lat = list[float]
-    #        lon = list[float]
-    #        ele = list[float]
+def gpx_calculate_dist(gpx_data):
+    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: dist = numpy.ndarray[float]
 
-    dist = np.zeros(len(lat))
+    dist = np.zeros(len(gpx_data['lat']))
 
-    for i in np.arange(1, len(dist)):
-        lat1 = np.radians(lat[i-1])
-        lon1 = np.radians(lon[i-1])
-        lat2 = np.radians(lat[i])
-        lon2 = np.radians(lon[i])
+    for i in range(len(dist)-1):
+        lat1 = np.radians(gpx_data['lat'][i])
+        lon1 = np.radians(gpx_data['lon'][i])
+        lat2 = np.radians(gpx_data['lat'][i+1])
+        lon2 = np.radians(gpx_data['lon'][i+1])
 
         delta_lat = lat2-lat1
         delta_lon = lon2-lon1
 
         c = 2.0*np.arcsin(np.sqrt(np.sin(delta_lat/2.0)**2+np.cos(lat1)*np.cos(lat2)*np.sin(delta_lon/2.0)**2)) # haversine formula
 
-        dist_lat_lon = EARTH_RADIUS*c # great-circle distance
+        dist_latlon = EARTH_RADIUS*c # great-circle distance
 
-        dist_ele = ele[i]-ele[i-1] # elevation change
+        if gpx_data['ele']:
+            dist_ele = gpx_data['ele'][i+1]-gpx_data['ele'][i]
 
-        dist[i] = np.sqrt(dist_lat_lon**2+dist_ele**2)
+            dist[i+1] = np.sqrt(dist_latlon**2+dist_ele**2)
+
+        else:
+            dist[i+1] = dist_latlon
 
     return dist
 
 def gpx_read(gpx_file):
     # input: gpx_file = str
-    # output: lat = list[float]
-    #         lon = list[float]
-    #         ele = list[float]
-    #         tsamp = dict{'tdata':list[float], 'tzinfo':datetime.tzinfo}
+    # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
 
-    lat = []
-    lon = []
-    ele = []
-    tstamp = {'tdata':[], 'tzinfo':None}
+    gpx_data = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':None}
+
+    i = 0
+    i_latlon = i_tstamp = []
 
     with open(gpx_file, 'r') as file:
         gpx = gpxpy.parse(file)
@@ -133,21 +128,38 @@ def gpx_read(gpx_file):
         for track in gpx.tracks:
             for segment in track.segments:
                 for point in segment.points:
-                    lat.append(point.latitude)
-                    lon.append(point.longitude)
-                    ele.append(point.elevation)
-                    tstamp['tdata'].append(point.time.timestamp())
+                    gpx_data['lat'].append(point.latitude)
+                    gpx_data['lon'].append(point.longitude)
 
-    tstamp['tzinfo'] = point.time.tzinfo
+                    i_latlon.append(i)
 
-    return lat, lon, ele, tstamp
+                    try:
+                        gpx_data['ele'].append(point.elevation)
+                    except:
+                        pass
 
-def gpx_write(gpx_file, lat, lon, ele, tstamp):
+                    try:
+                        gpx_data['tstamp'].append(point.time.timestamp())
+                    except:
+                        pass
+                    else:
+                        if not gpx_data['tzinfo']:
+                            gpx_data['tzinfo'] = point.time.tzinfo
+
+                        i_tstamp.append(i)
+
+                    i += 1
+
+    if i_tstamp and not len(i_latlon) == len(i_tstamp):
+        for k in ('lat', 'lon', 'ele', 'tstamp'):
+            if gpx_data[k]:
+                gpx_data[k] = [gpx_data[k][i] for i in i_tstamp]
+
+    return gpx_data
+
+def gpx_write(gpx_file, gpx_data):
     # input: gpx_file = str
-    #        lat = list[float]
-    #        lon = list[float]
-    #        ele = list[float]
-    #        tsamp = dict{'tdata':list[float], 'tzinfo':datetime.tzinfo}
+    #        gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: None
 
     gpx = gpxpy.gpx.GPX()
@@ -157,11 +169,11 @@ def gpx_write(gpx_file, lat, lon, ele, tstamp):
     gpx.tracks.append(gpx_track)
     gpx_track.segments.append(gpx_segment)
 
-    for i in range(len(lat)):
-        gpx_point = gpxpy.gpx.GPXTrackPoint(lat[i],
-                                            lon[i],
-                                            ele[i],
-                                            datetime.fromtimestamp(tstamp['tdata'][i], tz = tstamp['tzinfo']))
+    for i in range(len(gpx_data['lat'])):
+        gpx_point = gpxpy.gpx.GPXTrackPoint(gpx_data['lat'][i],
+                                            gpx_data['lon'][i],
+                                            gpx_data['ele'][i] if gpx_data['ele'] else None,
+                                            datetime.fromtimestamp(gpx_data['tstamp'][i], tz = gpx_data['tzinfo']) if gpx_data['tstamp'] else None)
 
         gpx_segment.points.append(gpx_point)
 
@@ -170,7 +182,7 @@ def gpx_write(gpx_file, lat, lon, ele, tstamp):
             file.write(gpx.to_xml())
 
     except:
-        exit('ERROR Failed to write {}'.format(gpx_file))
+        exit('ERROR Failed to save {}'.format(gpx_file))
 
     return
 
@@ -188,19 +200,17 @@ def main():
 
     for gpx_file in args.gpx_files:
         if not gpx_file[-17:] == '_interpolated.gpx':
-            print('Reading {}'.format(gpx_file))
+            gpx_data = gpx_read(gpx_file)
 
-            lat, lon, ele, tstamp = gpx_read(gpx_file)
+            print('Read {}'.format(gpx_file))
 
-            lat_interp, lon_interp, ele_interp, tstamp_interp = gpx_interpolate(lat, lon, ele, tstamp, args.res, args.deg)
+            gpx_x_interp = gpx_interpolate(gpx_data, args.res, args.deg)
 
             output_file = '{}_interpolated.gpx'.format(gpx_file[:-4])
 
-            print('Writing {}'.format(output_file))
+            gpx_write(output_file, gpx_x_interp)
 
-            gpx_write(output_file, lat_interp, lon_interp, ele_interp, tstamp_interp)
-
-    print('Done')
+            print('Saved {}'.format(output_file))
 
 if __name__ == '__main__':
     main()
