@@ -46,9 +46,11 @@ def gpx_interpolate(gpx_data, res, deg = 1):
         raise ValueError('number of data points must be > deg')
 
     # interpolate spatial data
-    dist = gpx_calculate_dist(gpx_data) # dist between points
+    gpx_dist = gpx_calculate_dist(gpx_data) # dist between points
 
-    dist_cum_norm = np.cumsum(dist)/np.sum(dist) # normalized cumulative dist between points
+    gpx_data, gpx_dist = gpx_remove_dup(gpx_data, gpx_dist)
+
+    dist_cum_norm = np.cumsum(gpx_dist)/np.sum(gpx_dist) # normalized cumulative dist between points
 
     x = [gpx_data['lat'], gpx_data['lon']]
     if gpx_data['ele']:
@@ -56,7 +58,7 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     tck, _ = splprep(x, u = dist_cum_norm, k = deg, s = 0, nest = len(gpx_data['lat'])+deg+1)
 
-    u_interp = np.linspace(0, 1, 1+int(np.sum(dist)/res))
+    u_interp = np.linspace(0, 1, 1+int(np.sum(gpx_dist)/res))
     x_interp = splev(u_interp, tck)
 
     lat_interp = x_interp[0]
@@ -112,6 +114,26 @@ def gpx_calculate_dist(gpx_data):
             dist[i+1] = dist_latlon
 
     return dist
+
+def gpx_remove_dup(gpx_data, gpx_dist):
+    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+    #        gpx_dist = numpy.ndarray[float]
+    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+    #        gpx_dist = numpy.ndarray[float]
+
+    i_dist = [0]
+
+    for i, d in enumerate(gpx_dist[1:], start = 1):
+        if d > 0:
+            i_dist.append(i)
+
+    gpx_dist = gpx_dist[i_dist]
+
+    for k in ('lat', 'lon', 'ele', 'tstamp'):
+        if gpx_data[k]:
+            gpx_data[k] = [gpx_data[k][i] for i in i_dist]
+
+    return gpx_data, gpx_dist
 
 def gpx_read(gpx_file):
     # input: gpx_file = str
