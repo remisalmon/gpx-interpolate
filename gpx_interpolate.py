@@ -76,23 +76,22 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
         tstamp_interp = x_interp[0]
 
-    # round precision to 1e-6
-    gpx_data['lat'] = list(np.round(lat_interp*1e6)/1e6)
-    gpx_data['lon'] = list(np.round(lon_interp*1e6)/1e6)
+    gpx_data['lat'] = list(lat_interp)
+    gpx_data['lon'] = list(lon_interp)
     if gpx_data['ele']:
-        gpx_data['ele'] = list(np.round(ele_interp*1e6)/1e6)
+        gpx_data['ele'] = list(ele_interp)
     if gpx_data['tstamp']:
-        gpx_data['tstamp'] = list(np.round(tstamp_interp*1e6)/1e6)
+        gpx_data['tstamp'] = list(tstamp_interp)
 
     return gpx_data
 
 def gpx_calculate_dist(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    # output: dist = numpy.ndarray[float]
+    # output: gpx_dist = numpy.ndarray[float]
 
-    dist = np.zeros(len(gpx_data['lat']))
+    gpx_dist = np.zeros(len(gpx_data['lat']))
 
-    for i in range(len(dist)-1):
+    for i in range(len(gpx_dist)-1):
         lat1 = np.radians(gpx_data['lat'][i])
         lon1 = np.radians(gpx_data['lon'][i])
         lat2 = np.radians(gpx_data['lat'][i+1])
@@ -108,18 +107,18 @@ def gpx_calculate_dist(gpx_data):
         if gpx_data['ele']:
             dist_ele = gpx_data['ele'][i+1]-gpx_data['ele'][i]
 
-            dist[i+1] = np.sqrt(dist_latlon**2+dist_ele**2)
+            gpx_dist[i+1] = np.sqrt(dist_latlon**2+dist_ele**2)
 
         else:
-            dist[i+1] = dist_latlon
+            gpx_dist[i+1] = dist_latlon
 
-    return dist
+    return gpx_dist
 
 def gpx_remove_dup(gpx_data, gpx_dist):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #        gpx_dist = numpy.ndarray[float]
-    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    #        gpx_dist = numpy.ndarray[float]
+    # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+    #         gpx_dist = numpy.ndarray[float]
 
     i_dist = [0]
 
@@ -213,16 +212,16 @@ def gpx_write(gpx_file, gpx_data):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'Interpolate GPX file(s) using linear/spline interpolation')
+    parser = argparse.ArgumentParser(description = 'interpolate GPX file(s) using linear or spline interpolation')
 
-    parser.add_argument('gpx_files', type = str, metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
-    parser.add_argument('-d', '--deg', type = int, default = 1, help = 'Interpolation degree, 1=linear, 2-5=spline (default: 1)')
-    parser.add_argument('-r', '--res', type = float, default = 1, help = 'Interpolation resolution in meters (default: 1)')
+    parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
+    parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
+    parser.add_argument('-r', '--res', type = float, default = 1, help = 'interpolation resolution in meters (default: 1)')
 
     args = parser.parse_args()
 
     for gpx_file in args.gpx_files:
-        if not gpx_file[-17:] == '_interpolated.gpx':
+        if not '_interpolated.gpx' in gpx_file:
             gpx_data = gpx_read(gpx_file)
 
             print('Read {}'.format(gpx_file))
