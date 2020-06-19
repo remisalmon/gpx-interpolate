@@ -24,7 +24,7 @@ import gpxpy
 import numpy as np
 
 from datetime import datetime
-from scipy.interpolate import splprep, splev
+from scipy.interpolate import interp1d, splprep, splev
 
 # constants
 EARTH_RADIUS = 6371e3 # meters
@@ -46,19 +46,17 @@ def gpx_interpolate(gpx_data, res, deg = 1):
         raise ValueError('number of data points must be > deg')
 
     # interpolate spatial data
-    gpx_dist = gpx_calculate_dist(gpx_data) # dist between points
+    gpx_dist = gpx_calculate_dist(gpx_data)
 
     gpx_data, gpx_dist = gpx_remove_dup(gpx_data, gpx_dist)
-
-    dist_cum_norm = np.cumsum(gpx_dist)/np.sum(gpx_dist) # normalized cumulative dist between points
 
     x = [gpx_data['lat'], gpx_data['lon']]
     if gpx_data['ele']:
         x.append(gpx_data['ele'])
 
-    tck, _ = splprep(x, u = dist_cum_norm, k = deg, s = 0, nest = len(gpx_data['lat'])+deg+1)
+    tck, _ = splprep(x, u = np.cumsum(gpx_dist), k = deg, s = 0)
 
-    u_interp = np.linspace(0, 1, 1+int(np.sum(gpx_dist)/res))
+    u_interp = np.linspace(0, np.sum(gpx_dist), 1+int(np.sum(gpx_dist)/res))
     x_interp = splev(u_interp, tck)
 
     lat_interp = x_interp[0]
@@ -68,13 +66,9 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     # interpolate time data linearly to preserve monotonicity
     if gpx_data['tstamp']:
-        x = [gpx_data['tstamp'], gpx_data['tstamp']]
+        f = interp1d(np.cumsum(gpx_dist), gpx_data['tstamp'], fill_value = 'extrapolate')
 
-        tck, _ = splprep(x, u = dist_cum_norm, k = 1, s = 0, nest = len(gpx_data['lat'])+1+1)
-
-        x_interp = splev(u_interp, tck)
-
-        tstamp_interp = x_interp[0]
+        tstamp_interp = f(u_interp)
 
     gpx_data['lat'] = list(lat_interp)
     gpx_data['lon'] = list(lon_interp)
@@ -120,11 +114,7 @@ def gpx_remove_dup(gpx_data, gpx_dist):
     # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #         gpx_dist = numpy.ndarray[float]
 
-    i_dist = [0]
-
-    for i, d in enumerate(gpx_dist[1:], start = 1):
-        if d > 0:
-            i_dist.append(i)
+    i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0
 
     gpx_dist = gpx_dist[i_dist]
 
