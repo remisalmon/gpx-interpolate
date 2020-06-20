@@ -50,9 +50,7 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     gpx_data, gpx_dist = gpx_remove_dup(gpx_data, gpx_dist)
 
-    x = [gpx_data['lat'], gpx_data['lon']]
-    if gpx_data['ele']:
-        x.append(gpx_data['ele'])
+    x = [gpx_data['lat'], gpx_data['lon'], gpx_data['ele']] if gpx_data['ele'] else [gpx_data['lat'], gpx_data['lon']]
 
     tck, _ = splprep(x, u = np.cumsum(gpx_dist), k = deg, s = 0)
 
@@ -61,8 +59,7 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     lat_interp = x_interp[0]
     lon_interp = x_interp[1]
-    if gpx_data['ele']:
-        ele_interp = x_interp[2]
+    ele_interp = x_interp[2] if gpx_data['ele'] else None
 
     # interpolate time data linearly to preserve monotonicity
     if gpx_data['tstamp']:
@@ -72,10 +69,8 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     gpx_data['lat'] = list(lat_interp)
     gpx_data['lon'] = list(lon_interp)
-    if gpx_data['ele']:
-        gpx_data['ele'] = list(ele_interp)
-    if gpx_data['tstamp']:
-        gpx_data['tstamp'] = list(tstamp_interp)
+    gpx_data['ele'] = list(ele_interp) if gpx_data['ele'] else None
+    gpx_data['tstamp'] = list(tstamp_interp) if gpx_data['tstamp'] else None
 
     return gpx_data
 
@@ -164,8 +159,7 @@ def gpx_read(gpx_file):
 
     if i_tstamp and not len(i_latlon) == len(i_tstamp):
         for k in ('lat', 'lon', 'ele', 'tstamp'):
-            if gpx_data[k]:
-                gpx_data[k] = [gpx_data[k][i] for i in i_tstamp]
+                gpx_data[k] = [gpx_data[k][i] for i in i_tstamp] if gpx_data[k] else None
 
     return gpx_data
 
@@ -182,10 +176,12 @@ def gpx_write(gpx_file, gpx_data):
     gpx_track.segments.append(gpx_segment)
 
     for i in range(len(gpx_data['lat'])):
-        gpx_point = gpxpy.gpx.GPXTrackPoint(gpx_data['lat'][i],
-                                            gpx_data['lon'][i],
-                                            gpx_data['ele'][i] if gpx_data['ele'] else None,
-                                            datetime.fromtimestamp(gpx_data['tstamp'][i], tz = gpx_data['tzinfo']) if gpx_data['tstamp'] else None)
+        lat = gpx_data['lat'][i]
+        lon = gpx_data['lon'][i]
+        ele = gpx_data['ele'][i] if gpx_data['ele'] else None
+        time = datetime.fromtimestamp(gpx_data['tstamp'][i], tz = gpx_data['tzinfo']) if gpx_data['tstamp'] else None
+
+        gpx_point = gpxpy.gpx.GPXTrackPoint(lat, lon, ele, time)
 
         gpx_segment.points.append(gpx_point)
 
