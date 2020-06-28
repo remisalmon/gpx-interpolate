@@ -103,6 +103,18 @@ def gpx_calculate_dist(gpx_data):
 
     return gpx_dist
 
+def gpx_calculate_speed(gpx_data):
+    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tz':datetime.tzinfo}
+    # output: gpx_speed = numpy.ndarray[float]
+
+    gpx_dist = gpx_calculate_dist(gpx_data)
+
+    gpx_speed = gpx_dist/(np.concatenate(([1.0], np.diff(gpx_data['tstamp']))))
+
+    gpx_speed = np.nan_to_num(gpx_speed, nan = 0)
+
+    return gpx_speed
+
 def gpx_remove_dup(gpx_data, gpx_dist):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #        gpx_dist = numpy.ndarray[float]
@@ -114,8 +126,7 @@ def gpx_remove_dup(gpx_data, gpx_dist):
     gpx_dist = gpx_dist[i_dist]
 
     for k in ('lat', 'lon', 'ele', 'tstamp'):
-        if gpx_data[k]:
-            gpx_data[k] = [gpx_data[k][i] for i in i_dist]
+        gpx_data[k] = [gpx_data[k][i] for i in i_dist] if gpx_data[k] else None
 
     return gpx_data, gpx_dist
 
@@ -163,10 +174,13 @@ def gpx_read(gpx_file):
 
     return gpx_data
 
-def gpx_write(gpx_file, gpx_data):
+def gpx_write(gpx_file, gpx_data, write_speed = False):
     # input: gpx_file = str
     #        gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: None
+
+    if write_speed:
+        gpx_speed = gpx_calculate_speed(gpx_data)
 
     gpx = gpxpy.gpx.GPX()
     gpx_track = gpxpy.gpx.GPXTrack()
@@ -180,14 +194,15 @@ def gpx_write(gpx_file, gpx_data):
         lon = gpx_data['lon'][i]
         ele = gpx_data['ele'][i] if gpx_data['ele'] else None
         time = datetime.fromtimestamp(gpx_data['tstamp'][i], tz = gpx_data['tzinfo']) if gpx_data['tstamp'] else None
+        speed = gpx_speed[i] if write_speed else None
 
-        gpx_point = gpxpy.gpx.GPXTrackPoint(lat, lon, ele, time)
+        gpx_point = gpxpy.gpx.GPXTrackPoint(lat, lon, ele, time, speed = speed)
 
         gpx_segment.points.append(gpx_point)
 
     try:
         with open(gpx_file, 'w') as file:
-            file.write(gpx.to_xml())
+            file.write(gpx.to_xml(version = '1.0' if write_speed else '1.1'))
 
     except:
         exit('ERROR Failed to save {}'.format(gpx_file))
@@ -203,6 +218,7 @@ def main():
     parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
     parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
     parser.add_argument('-r', '--res', type = float, default = 1, help = 'interpolation resolution in meters (default: 1)')
+    parser.add_argument('-s', '--speed', action = 'store_true', help = 'Save interpolated speed')
 
     args = parser.parse_args()
 
@@ -212,11 +228,11 @@ def main():
 
             print('Read {}'.format(gpx_file))
 
-            gpx_x_interp = gpx_interpolate(gpx_data, args.res, args.deg)
+            gpx_data_interp = gpx_interpolate(gpx_data, args.res, args.deg)
 
             output_file = '{}_interpolated.gpx'.format(gpx_file[:-4])
 
-            gpx_write(output_file, gpx_x_interp)
+            gpx_write(output_file, gpx_data_interp, write_speed = args.speed)
 
             print('Saved {}'.format(output_file))
 
