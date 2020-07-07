@@ -46,11 +46,11 @@ def gpx_interpolate(gpx_data, res, deg = 1):
         raise ValueError('number of data points must be > deg')
 
     # interpolate spatial data
-    gpx_dist = gpx_calculate_dist(gpx_data)
+    gpx_dist = gpx_calculate_distance(gpx_data)
 
     gpx_data, gpx_dist = gpx_remove_dup(gpx_data, gpx_dist)
 
-    x = [gpx_data['lat'], gpx_data['lon'], gpx_data['ele']] if gpx_data['ele'] else [gpx_data['lat'], gpx_data['lon']]
+    x = [gpx_data[i] for i in ('lat', 'lon', 'ele') if gpx_data[i]]
 
     tck, _ = splprep(x, u = np.cumsum(gpx_dist), k = deg, s = 0)
 
@@ -74,7 +74,7 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     return gpx_data
 
-def gpx_calculate_dist(gpx_data):
+def gpx_calculate_distance(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: gpx_dist = numpy.ndarray[float]
 
@@ -107,7 +107,7 @@ def gpx_calculate_speed(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tz':datetime.tzinfo}
     # output: gpx_speed = numpy.ndarray[float]
 
-    gpx_dist = gpx_calculate_dist(gpx_data)
+    gpx_dist = gpx_calculate_distance(gpx_data)
 
     gpx_speed = gpx_dist/(np.concatenate(([1.0], np.diff(gpx_data['tstamp']))))
 
@@ -177,6 +177,7 @@ def gpx_read(gpx_file):
 def gpx_write(gpx_file, gpx_data, write_speed = False):
     # input: gpx_file = str
     #        gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+    #        write_speed = bool
     # output: None
 
     if write_speed:
