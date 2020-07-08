@@ -30,7 +30,7 @@ gpx_data = {'lat':lat,
             'tstamp':tstamp,
             'tzinfo':tzinfo}
 
-gpx_data = gpx_interpolate(gpx_data, res, deg)
+gpx_data_interp = gpx_interpolate(gpx_data, res, deg)
 ```
 
 where:  

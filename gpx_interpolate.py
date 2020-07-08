@@ -34,7 +34,7 @@ def gpx_interpolate(gpx_data, res, deg = 1):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #        res = float
     #        deg = int
-    # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+    # output: gpx_data_interp = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
 
     if not type(deg) is int:
         raise TypeError('deg must be int')
@@ -46,36 +46,39 @@ def gpx_interpolate(gpx_data, res, deg = 1):
         raise ValueError('number of data points must be > deg')
 
     # interpolate spatial data
-    gpx_dist = gpx_calculate_distance(gpx_data)
+    _gpx_data = gpx_remove_duplicate(gpx_data)
 
-    gpx_data, gpx_dist = gpx_remove_dup(gpx_data, gpx_dist)
+    _gpx_dist = gpx_calculate_distance(_gpx_data)
 
-    x = [gpx_data[i] for i in ('lat', 'lon', 'ele') if gpx_data[i]]
+    x = [_gpx_data[i] for i in ('lat', 'lon', 'ele') if _gpx_data[i]]
 
-    tck, _ = splprep(x, u = np.cumsum(gpx_dist), k = deg, s = 0)
+    tck, _ = splprep(x, u = np.cumsum(_gpx_dist), k = deg, s = 0)
 
-    u_interp = np.linspace(0, np.sum(gpx_dist), 1+int(np.sum(gpx_dist)/res))
+    u_interp = np.linspace(0, np.sum(_gpx_dist), 1+int(np.sum(_gpx_dist)/res))
     x_interp = splev(u_interp, tck)
 
     lat_interp = x_interp[0]
     lon_interp = x_interp[1]
-    ele_interp = x_interp[2] if gpx_data['ele'] else None
+    ele_interp = x_interp[2] if _gpx_data['ele'] else None
 
     # interpolate time data linearly to preserve monotonicity
-    if gpx_data['tstamp']:
-        f = interp1d(np.cumsum(gpx_dist), gpx_data['tstamp'], fill_value = 'extrapolate')
+    if _gpx_data['tstamp']:
+        f = interp1d(np.cumsum(_gpx_dist), _gpx_data['tstamp'], fill_value = 'extrapolate')
 
         tstamp_interp = f(u_interp)
 
-    gpx_data['lat'] = list(lat_interp)
-    gpx_data['lon'] = list(lon_interp)
-    gpx_data['ele'] = list(ele_interp) if gpx_data['ele'] else None
-    gpx_data['tstamp'] = list(tstamp_interp) if gpx_data['tstamp'] else None
+    _gpx_data['lat'] = list(lat_interp)
+    _gpx_data['lon'] = list(lon_interp)
+    _gpx_data['ele'] = list(ele_interp) if _gpx_data['ele'] else None
+    _gpx_data['tstamp'] = list(tstamp_interp) if _gpx_data['tstamp'] else None
 
-    return gpx_data
+    gpx_data_interp = _gpx_data
 
-def gpx_calculate_distance(gpx_data):
+    return gpx_data_interp
+
+def gpx_calculate_distance(gpx_data, use_ele = True):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+    #        use_ele = bool
     # output: gpx_dist = numpy.ndarray[float]
 
     gpx_dist = np.zeros(len(gpx_data['lat']))
@@ -93,7 +96,7 @@ def gpx_calculate_distance(gpx_data):
 
         dist_latlon = EARTH_RADIUS*c # great-circle distance
 
-        if gpx_data['ele']:
+        if gpx_data['ele'] and use_ele:
             dist_ele = gpx_data['ele'][i+1]-gpx_data['ele'][i]
 
             gpx_dist[i+1] = np.sqrt(dist_latlon**2+dist_ele**2)
@@ -104,31 +107,34 @@ def gpx_calculate_distance(gpx_data):
     return gpx_dist
 
 def gpx_calculate_speed(gpx_data):
-    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tz':datetime.tzinfo}
+    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: gpx_speed = numpy.ndarray[float]
 
     gpx_dist = gpx_calculate_distance(gpx_data)
 
-    gpx_speed = gpx_dist/(np.concatenate(([1.0], np.diff(gpx_data['tstamp']))))
+    gpx_speed = gpx_dist/np.concatenate(([1.0], np.diff(gpx_data['tstamp'])))
 
     gpx_speed = np.nan_to_num(gpx_speed, nan = 0)
 
     return gpx_speed
 
-def gpx_remove_dup(gpx_data, gpx_dist):
+def gpx_remove_duplicate(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    #        gpx_dist = numpy.ndarray[float]
-    # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    #         gpx_dist = numpy.ndarray[float]
+    # output: gpx_data_nodup = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+
+    gpx_dist = gpx_calculate_distance(gpx_data)
 
     i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0
 
-    gpx_dist = gpx_dist[i_dist]
+    if not len(gpx_dist) == len(i_dist):
+        print('Removed {} duplicate trackpoint(s)'.format(len(gpx_dist)-len(i_dist)))
+
+    gpx_data_nodup = gpx_data.copy()
 
     for k in ('lat', 'lon', 'ele', 'tstamp'):
-        gpx_data[k] = [gpx_data[k][i] for i in i_dist] if gpx_data[k] else None
+        gpx_data_nodup[k] = [gpx_data[k][i] for i in i_dist] if gpx_data[k] else None
 
-    return gpx_data, gpx_dist
+    return gpx_data_nodup
 
 def gpx_read(gpx_file):
     # input: gpx_file = str
@@ -227,7 +233,7 @@ def main():
         if not '_interpolated.gpx' in gpx_file:
             gpx_data = gpx_read(gpx_file)
 
-            print('Read {}'.format(gpx_file))
+            print('Read {} trackpoints from {}'.format(len(gpx_data['lat']), gpx_file))
 
             gpx_data_interp = gpx_interpolate(gpx_data, args.res, args.deg)
 
@@ -235,7 +241,7 @@ def main():
 
             gpx_write(output_file, gpx_data_interp, write_speed = args.speed)
 
-            print('Saved {}'.format(output_file))
+            print('Saved {} trackpoints to {}'.format(len(gpx_data_interp['lat']), output_file))
 
 if __name__ == '__main__':
     main()
