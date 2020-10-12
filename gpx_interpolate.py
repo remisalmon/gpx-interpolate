@@ -54,12 +54,8 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     tck, _ = splprep(x, u = np.cumsum(_gpx_dist), k = deg, s = 0)
 
-    u_interp = np.linspace(0, np.sum(_gpx_dist), 1+int(np.sum(_gpx_dist)/res))
+    u_interp = np.linspace(0, np.sum(_gpx_dist), num = 1+int(np.sum(_gpx_dist)/res))
     x_interp = splev(u_interp, tck)
-
-    lat_interp = x_interp[0]
-    lon_interp = x_interp[1]
-    ele_interp = x_interp[2] if _gpx_data['ele'] else None
 
     # interpolate time data linearly to preserve monotonicity
     if _gpx_data['tstamp']:
@@ -67,12 +63,11 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
         tstamp_interp = f(u_interp)
 
-    _gpx_data['lat'] = list(lat_interp)
-    _gpx_data['lon'] = list(lon_interp)
-    _gpx_data['ele'] = list(ele_interp) if _gpx_data['ele'] else None
-    _gpx_data['tstamp'] = list(tstamp_interp) if _gpx_data['tstamp'] else None
-
-    gpx_data_interp = _gpx_data
+    gpx_data_interp = {'lat':list(x_interp[0]),
+                       'lon':list(x_interp[1]),
+                       'ele':list(x_interp[2]) if gpx_data['ele'] else None,
+                       'tstamp':list(tstamp_interp) if gpx_data['tstamp'] else None,
+                       'tzinfo':gpx_data['tzinfo']}
 
     return gpx_data_interp
 
@@ -100,7 +95,6 @@ def gpx_calculate_distance(gpx_data, use_ele = True):
             dist_ele = gpx_data['ele'][i+1]-gpx_data['ele'][i]
 
             gpx_dist[i+1] = np.sqrt(dist_latlon**2+dist_ele**2)
-
         else:
             gpx_dist[i+1] = dist_latlon
 
@@ -114,7 +108,7 @@ def gpx_calculate_speed(gpx_data):
 
     gpx_speed = gpx_dist/np.concatenate(([1.0], np.diff(gpx_data['tstamp'])))
 
-    gpx_speed = np.nan_to_num(gpx_speed, nan = 0)
+    gpx_speed = np.nan_to_num(gpx_speed, nan = 0.0)
 
     return gpx_speed
 
@@ -129,7 +123,7 @@ def gpx_remove_duplicate(gpx_data):
     if not len(gpx_dist) == len(i_dist):
         print('Removed {} duplicate trackpoint(s)'.format(len(gpx_dist)-len(i_dist)))
 
-    gpx_data_nodup = gpx_data.copy()
+    gpx_data_nodup = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':gpx_data['tzinfo']}
 
     for k in ('lat', 'lon', 'ele', 'tstamp'):
         gpx_data_nodup[k] = [gpx_data[k][i] for i in i_dist] if gpx_data[k] else None
@@ -210,7 +204,6 @@ def gpx_write(gpx_file, gpx_data, write_speed = False):
     try:
         with open(gpx_file, 'w') as file:
             file.write(gpx.to_xml(version = '1.0' if write_speed else '1.1'))
-
     except:
         exit('ERROR Failed to save {}'.format(gpx_file))
 
