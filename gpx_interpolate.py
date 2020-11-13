@@ -104,11 +104,12 @@ def gpx_calculate_speed(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: gpx_speed = numpy.ndarray[float]
 
-    gpx_dist = gpx_calculate_distance(gpx_data)
+    gpx_dist = gpx_calculate_distance(gpx_data, use_ele = True)
 
-    gpx_speed = gpx_dist/np.concatenate(([1.0], np.diff(gpx_data['tstamp'])))
+    gpx_dtstamp = np.diff(gpx_data['tstamp'], prepend = gpx_data['tstamp'][0])
+    gpx_dtstamp[gpx_dtstamp < 1e-6] = np.nan
 
-    gpx_speed = np.nan_to_num(gpx_speed, nan = 0.0)
+    gpx_speed = np.nan_to_num(gpx_dist/gpx_dtstamp, nan = 0.0)
 
     return gpx_speed
 
@@ -118,7 +119,7 @@ def gpx_remove_duplicate(gpx_data):
 
     gpx_dist = gpx_calculate_distance(gpx_data)
 
-    i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0
+    i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0.0
 
     if not len(gpx_dist) == len(i_dist):
         print('Removed {} duplicate trackpoint(s)'.format(len(gpx_dist)-len(i_dist)))
@@ -217,13 +218,13 @@ def main():
 
     parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
     parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
-    parser.add_argument('-r', '--res', type = float, default = 1, help = 'interpolation resolution in meters (default: 1)')
+    parser.add_argument('-r', '--res', type = float, default = 1.0, help = 'interpolation resolution in meters (default: 1)')
     parser.add_argument('-s', '--speed', action = 'store_true', help = 'Save interpolated speed')
 
     args = parser.parse_args()
 
     for gpx_file in args.gpx_files:
-        if not '_interpolated.gpx' in gpx_file:
+        if not gpx_file.endswith('_interpolated.gpx'):
             gpx_data = gpx_read(gpx_file)
 
             print('Read {} trackpoints from {}'.format(len(gpx_data['lat']), gpx_file))
