@@ -48,7 +48,7 @@ where:
 
 ## Requirements
 ```
-numpy==1.19.0
-scipy==1.5.0
 gpxpy==1.4.2
+scipy==1.5.4
+numpy==1.19.4
 ```

@@ -48,7 +48,7 @@ def gpx_interpolate(gpx_data, res, deg = 1):
     # interpolate spatial data
     _gpx_data = gpx_remove_duplicate(gpx_data)
 
-    _gpx_dist = gpx_calculate_distance(_gpx_data)
+    _gpx_dist = gpx_calculate_distance(_gpx_data, use_ele = True)
 
     x = [_gpx_data[i] for i in ('lat', 'lon', 'ele') if _gpx_data[i]]
 
