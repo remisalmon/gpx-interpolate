@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) 2019 Remi Salmon
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,7 +32,7 @@ from scipy.interpolate import interp1d, splprep, splev
 EARTH_RADIUS = 6371e3 # meters
 
 # functions
-def gpx_interpolate(gpx_data, res, deg = 1):
+def gpx_interpolate(gpx_data, res, num = 0, deg = 1):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #        res = float
     #        deg = int
@@ -54,7 +56,8 @@ def gpx_interpolate(gpx_data, res, deg = 1):
 
     tck, _ = splprep(x, u = np.cumsum(_gpx_dist), k = deg, s = 0)
 
-    u_interp = np.linspace(0, np.sum(_gpx_dist), num = 1+int(np.sum(_gpx_dist)/res))
+    num = num if num else 1+int(np.sum(_gpx_dist)/res)
+    u_interp = np.linspace(0, np.sum(_gpx_dist), num)
     x_interp = splev(u_interp, tck)
 
     # interpolate time data linearly to preserve monotonicity
@@ -219,7 +222,8 @@ def main():
     parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
     parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
     parser.add_argument('-r', '--res', type = float, default = 1.0, help = 'interpolation resolution in meters (default: 1)')
-    parser.add_argument('-s', '--speed', action = 'store_true', help = 'Save interpolated speed')
+    parser.add_argument('-n', '--num', type = int, default = 0, help = 'force point count in output (default: disabled)')
+    parser.add_argument('-s', '--speed', action = 'store_true', help = 'save interpolated speed')
 
     args = parser.parse_args()
 
@@ -229,7 +233,7 @@ def main():
 
             print('Read {} trackpoints from {}'.format(len(gpx_data['lat']), gpx_file))
 
-            gpx_data_interp = gpx_interpolate(gpx_data, args.res, args.deg)
+            gpx_data_interp = gpx_interpolate(gpx_data, args.res, args.num, args.deg)
 
             output_file = '{}_interpolated.gpx'.format(gpx_file[:-4])
 
