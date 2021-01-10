@@ -29,12 +29,14 @@ from datetime import datetime
 from scipy.interpolate import interp1d, splprep, splev
 
 # constants
-EARTH_RADIUS = 6371e3 # meters
+EARTH_RADIUS = 6371e3 # meter
+EPS = 1e-6 # meter
 
 # functions
-def gpx_interpolate(gpx_data, res, num = 0, deg = 1):
+def gpx_interpolate(gpx_data, res = 1.0, num = 0, deg = 1):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     #        res = float
+    #        num = int
     #        deg = int
     # output: gpx_data_interp = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
 
@@ -110,7 +112,7 @@ def gpx_calculate_speed(gpx_data):
     gpx_dist = gpx_calculate_distance(gpx_data, use_ele = True)
 
     gpx_dtstamp = np.diff(gpx_data['tstamp'], prepend = gpx_data['tstamp'][0])
-    gpx_dtstamp[gpx_dtstamp < 1e-6] = np.nan
+    gpx_dtstamp[gpx_dtstamp < EPS] = np.nan
 
     gpx_speed = np.nan_to_num(gpx_dist/gpx_dtstamp, nan = 0.0)
 
@@ -120,7 +122,7 @@ def gpx_remove_duplicate(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: gpx_data_nodup = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
 
-    gpx_dist = gpx_calculate_distance(gpx_data)
+    gpx_dist = gpx_calculate_distance(gpx_data, use_ele = False)
 
     i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0.0
 
