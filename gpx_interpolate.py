@@ -50,7 +50,7 @@ def gpx_interpolate(gpx_data, res = 1.0, num = 0, deg = 1):
         raise ValueError('number of data points must be > deg')
 
     # interpolate spatial data
-    _gpx_data = gpx_remove_duplicate(gpx_data)
+    _gpx_data = gpx_remove_duplicates(gpx_data)
 
     _gpx_dist = gpx_calculate_distance(_gpx_data, use_ele = True)
 
@@ -118,7 +118,7 @@ def gpx_calculate_speed(gpx_data):
 
     return gpx_speed
 
-def gpx_remove_duplicate(gpx_data):
+def gpx_remove_duplicates(gpx_data):
     # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
     # output: gpx_data_nodup = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
 
@@ -126,8 +126,8 @@ def gpx_remove_duplicate(gpx_data):
 
     i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0.0
 
-    if not len(gpx_dist) == len(i_dist):
-        print('Removed {} duplicate trackpoint(s)'.format(len(gpx_dist)-len(i_dist)))
+    if len(i_dist) == len(gpx_dist):
+        return gpx_data
 
     gpx_data_nodup = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':gpx_data['tzinfo']}
 
@@ -234,6 +234,11 @@ def main():
             gpx_data = gpx_read(gpx_file)
 
             print('Read {} trackpoints from {}'.format(len(gpx_data['lat']), gpx_file))
+
+            gpx_data_nodup = gpx_remove_duplicates(gpx_data)
+
+            if not len(gpx_data_nodup['lat']) == len(gpx_data['lat']):
+                print('Removed {} duplicate trackpoint(s)'.format(len(gpx_data['lat'])-len(gpx_data_nodup['lat'])))
 
             gpx_data_interp = gpx_interpolate(gpx_data, args.res, args.num, args.deg)
 
