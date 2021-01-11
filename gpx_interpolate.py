@@ -58,7 +58,8 @@ def gpx_interpolate(gpx_data, res = 1.0, num = 0, deg = 1):
 
     tck, _ = splprep(x, u = np.cumsum(_gpx_dist), k = deg, s = 0)
 
-    num = num if num else 1+int(np.sum(_gpx_dist)/res)
+    num = num if num else 1+int(np.sum(_gpx_dist)/res+0.5)
+
     u_interp = np.linspace(0, np.sum(_gpx_dist), num)
     x_interp = splev(u_interp, tck)
 
