@@ -28,7 +28,7 @@ import numpy as np
 from datetime import datetime
 from scipy.interpolate import interp1d, splprep, splev
 
-# constants
+# globals
 EARTH_RADIUS = 6371e3 # meter
 EPS = 1e-6 # meter
 
@@ -175,6 +175,7 @@ def gpx_read(gpx_file):
 
                     i += 1
 
+    # remove trackpoints without tstamp
     if i_tstamp and not len(i_latlon) == len(i_tstamp):
         for k in ('lat', 'lon', 'ele', 'tstamp'):
                 gpx_data[k] = [gpx_data[k][i] for i in i_tstamp] if gpx_data[k] else None
@@ -241,7 +242,7 @@ def main():
             if not len(gpx_data_nodup['lat']) == len(gpx_data['lat']):
                 print('Removed {} duplicate trackpoint(s)'.format(len(gpx_data['lat'])-len(gpx_data_nodup['lat'])))
 
-            gpx_data_interp = gpx_interpolate(gpx_data, args.res, args.num, args.deg)
+            gpx_data_interp = gpx_interpolate(gpx_data_nodup, args.res, args.num, args.deg)
 
             output_file = '{}_interpolated.gpx'.format(gpx_file[:-4])
 
