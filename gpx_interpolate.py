@@ -38,7 +38,7 @@ EARTH_RADIUS = 6371e3 # meter
 EPS = 1e-6 # meter
 
 # functions
-def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0, deg: int = 1):
+def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0, deg: int = 1) -> GPXData:
     """
     Returns gpx_data interpolated with a spatial resolution res using a spline of degree deg
 
@@ -179,9 +179,10 @@ def gpx_read(gpx_file: str) -> GPXData:
 
                     i += 1
 
+    # remove trackpoints without tstamp
     if i_tstamp and not len(i_latlon) == len(i_tstamp):
         for k in ('lat', 'lon', 'ele', 'tstamp'):
-                gpx_data[k] = [gpx_data[k][i] for i in i_tstamp] if gpx_data[k] else None
+            gpx_data[k] = [gpx_data[k][i] for i in i_tstamp] if gpx_data[k] else None
 
     return gpx_data
 
@@ -189,6 +190,9 @@ def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> No
     """Writes a GPX file with a GPXData structure, including speed if write_speed is True"""
 
     if write_speed:
+        if not gpx_data['tstamp']:
+            raise ValueError('tstamp data is missing from gpx_data')
+
         gpx_speed = gpx_calculate_speed(gpx_data)
 
     gpx = gpxpy.gpx.GPX()
@@ -221,7 +225,7 @@ def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> No
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'interpolate GPX file(s) using linear or spline interpolation')
+    parser = argparse.ArgumentParser(description = 'interpolate GPX files using linear or spline interpolation')
 
     parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
     parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
