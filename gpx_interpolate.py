@@ -25,20 +25,25 @@ import gpxpy
 
 import numpy as np
 
-from datetime import datetime
+from datetime import datetime, tzinfo
 from scipy.interpolate import interp1d, splprep, splev
+
+from typing import Dict, List, Union
+
+# types
+GPXData = Dict[str, Union[List[float], tzinfo]]
 
 # globals
 EARTH_RADIUS = 6371e3 # meter
 EPS = 1e-6 # meter
 
 # functions
-def gpx_interpolate(gpx_data, res = 1.0, num = 0, deg = 1):
-    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    #        res = float
-    #        num = int
-    #        deg = int
-    # output: gpx_data_interp = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0, deg: int = 1):
+    """
+    Returns gpx_data interpolated with a spatial resolution res using a spline of degree deg
+
+    if num > 0, gpx_data is interpolated to num points and res is ignored
+    """
 
     if not type(deg) is int:
         raise TypeError('deg must be int')
@@ -77,10 +82,12 @@ def gpx_interpolate(gpx_data, res = 1.0, num = 0, deg = 1):
 
     return gpx_data_interp
 
-def gpx_calculate_distance(gpx_data, use_ele = True):
-    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    #        use_ele = bool
-    # output: gpx_dist = numpy.ndarray[float]
+def gpx_calculate_distance(gpx_data: GPXData, use_ele: bool = True) -> List[float]:
+    """
+    Returns the distance between GPX trackpoints
+
+    if use_ele is True and gpx_data['ele'] is not None, the elevation data is used to compute the distance
+    """
 
     gpx_dist = np.zeros(len(gpx_data['lat']))
 
@@ -104,11 +111,10 @@ def gpx_calculate_distance(gpx_data, use_ele = True):
         else:
             gpx_dist[i+1] = dist_latlon
 
-    return gpx_dist
+    return gpx_dist.tolist()
 
-def gpx_calculate_speed(gpx_data):
-    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    # output: gpx_speed = numpy.ndarray[float]
+def gpx_calculate_speed(gpx_data: GPXData) -> List[float]:
+    """Returns the speed between GPX trackpoints"""
 
     gpx_dist = gpx_calculate_distance(gpx_data, use_ele = True)
 
@@ -117,11 +123,10 @@ def gpx_calculate_speed(gpx_data):
 
     gpx_speed = np.nan_to_num(gpx_dist/gpx_dtstamp, nan = 0.0)
 
-    return gpx_speed
+    return gpx_speed.tolist()
 
-def gpx_remove_duplicates(gpx_data):
-    # input: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    # output: gpx_data_nodup = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+def gpx_remove_duplicates(gpx_data: GPXData) -> GPXData:
+    """Returns gpx_data where duplicate trackpoints are removed"""
 
     gpx_dist = gpx_calculate_distance(gpx_data, use_ele = False)
 
@@ -137,9 +142,8 @@ def gpx_remove_duplicates(gpx_data):
 
     return gpx_data_nodup
 
-def gpx_read(gpx_file):
-    # input: gpx_file = str
-    # output: gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
+def gpx_read(gpx_file: str) -> GPXData:
+    """Returns a GPXData structure from a GPX file"""
 
     gpx_data = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':None}
 
@@ -175,18 +179,14 @@ def gpx_read(gpx_file):
 
                     i += 1
 
-    # remove trackpoints without tstamp
     if i_tstamp and not len(i_latlon) == len(i_tstamp):
         for k in ('lat', 'lon', 'ele', 'tstamp'):
                 gpx_data[k] = [gpx_data[k][i] for i in i_tstamp] if gpx_data[k] else None
 
     return gpx_data
 
-def gpx_write(gpx_file, gpx_data, write_speed = False):
-    # input: gpx_file = str
-    #        gpx_data = dict{'lat':list[float], 'lon':list[float], 'ele':list[float], 'tstamp':list[float], 'tzinfo':datetime.tzinfo}
-    #        write_speed = bool
-    # output: None
+def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> None:
+    """Writes a GPX file with a GPXData structure, including speed if write_speed is True"""
 
     if write_speed:
         gpx_speed = gpx_calculate_speed(gpx_data)
