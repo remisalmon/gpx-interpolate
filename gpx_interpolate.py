@@ -35,7 +35,7 @@ GPXData = Dict[str, Union[List[float], tzinfo]]
 
 # globals
 EARTH_RADIUS = 6371e3 # meter
-EPS = 1e-6 # meter
+EPS = 1e-6 # second
 
 # functions
 def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0, deg: int = 1) -> GPXData:
@@ -227,7 +227,7 @@ def main():
 
     parser = argparse.ArgumentParser(description = 'interpolate GPX files using linear or spline interpolation')
 
-    parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file(s)')
+    parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file')
     parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
     parser.add_argument('-r', '--res', type = float, default = 1.0, help = 'interpolation resolution in meters (default: 1)')
     parser.add_argument('-n', '--num', type = int, default = 0, help = 'force point count in output (default: disabled)')
