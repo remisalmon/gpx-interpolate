@@ -51,6 +51,10 @@ where:
 :black_circle: = input GPX data, :red_circle: = interpolated GPX data  
 ![plot.png](plot.png)
 
+## Tests
+
+`python -m doctest -o IGNORE_EXCEPTION_DETAIL -f test/test.txt` (or just `test/test.sh`)
+
 ## Requirements
 ```
 gpxpy==1.4.2

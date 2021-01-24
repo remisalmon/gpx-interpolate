@@ -45,14 +45,17 @@ def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0, deg: int 
     if num > 0, gpx_data is interpolated to num points and res is ignored
     """
 
-    if not type(deg) is int:
-        raise TypeError('deg must be int')
-
     if not 1 <= deg <= 5:
         raise ValueError('deg must be in [1-5]')
 
     if not len(gpx_data['lat']) > deg:
         raise ValueError('number of data points must be > deg')
+
+    if num < 0:
+        raise ValueError('num must be >= 0')
+
+    if res <= 0.0:
+        raise ValueError('res must be > 0')
 
     # interpolate spatial data
     _gpx_data = gpx_remove_duplicates(gpx_data)
