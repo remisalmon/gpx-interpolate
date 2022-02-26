@@ -28,7 +28,7 @@ import numpy as np
 from datetime import datetime, tzinfo
 from scipy.interpolate import pchip_interpolate
 
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 # types
 GPXData = Dict[str, Union[List[float], tzinfo]]
@@ -38,22 +38,21 @@ EARTH_RADIUS = 6371e3 # meter
 EPS = 1e-6 # second
 
 # functions
-def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0) -> GPXData:
+def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: Optional[int] = None) -> GPXData:
     """
-    Returns gpx_data interpolated with a spatial resolution res using piecewise cubic Hermite splines
+    Returns gpx_data interpolated with a spatial resolution res using piecewise cubic Hermite splines.
 
-    if num > 0, gpx_data is interpolated to num points and res is ignored
+    if num is passed, gpx_data is interpolated to num points and res is ignored.
     """
 
     if res <= 0.0:
         raise ValueError('res must be > 0.0')
 
-    if num < 0:
+    if num is not None and num < 0:
         raise ValueError('num must be >= 0')
 
     _gpx_data = gpx_remove_duplicates(gpx_data)
-
-    _gpx_dist = gpx_calculate_distance(_gpx_data, use_ele = True)
+    _gpx_dist = gpx_calculate_distance(_gpx_data, use_ele=True)
 
     xi = np.cumsum(_gpx_dist)
     yi = np.array([_gpx_data[i] for i in ('lat', 'lon', 'ele', 'tstamp') if _gpx_data[i]])
@@ -61,7 +60,7 @@ def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0) -> GPXDat
     num = num if num else 1+int(xi[-1]/res+0.5)
 
     x = np.linspace(xi[0], xi[-1], num)
-    y = pchip_interpolate(xi, yi, x, axis = 1)
+    y = pchip_interpolate(xi, yi, x, axis=1)
 
     gpx_data_interp = {'lat':list(y[0, :]),
                        'lon':list(y[1, :]),
@@ -105,19 +104,19 @@ def gpx_calculate_distance(gpx_data: GPXData, use_ele: bool = True) -> List[floa
 def gpx_calculate_speed(gpx_data: GPXData) -> List[float]:
     """Returns the speed between GPX trackpoints"""
 
-    gpx_dist = gpx_calculate_distance(gpx_data, use_ele = True)
+    gpx_dist = gpx_calculate_distance(gpx_data, use_ele=True)
 
-    gpx_dtstamp = np.diff(gpx_data['tstamp'], prepend = gpx_data['tstamp'][0])
+    gpx_dtstamp = np.diff(gpx_data['tstamp'], prepend=gpx_data['tstamp'][0])
     gpx_dtstamp[gpx_dtstamp < EPS] = np.nan
 
-    gpx_speed = np.nan_to_num(gpx_dist/gpx_dtstamp, nan = 0.0)
+    gpx_speed = np.nan_to_num(gpx_dist/gpx_dtstamp, nan=0.0)
 
     return gpx_speed.tolist()
 
 def gpx_remove_duplicates(gpx_data: GPXData) -> GPXData:
     """Returns gpx_data where duplicate trackpoints are removed"""
 
-    gpx_dist = gpx_calculate_distance(gpx_data, use_ele = False)
+    gpx_dist = gpx_calculate_distance(gpx_data, use_ele=False)
 
     i_dist = np.concatenate(([0], np.nonzero(gpx_dist)[0])) # keep gpx_dist[0] = 0.0
 
@@ -195,16 +194,16 @@ def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> No
         lat = gpx_data['lat'][i]
         lon = gpx_data['lon'][i]
         ele = gpx_data['ele'][i] if gpx_data['ele'] else None
-        time = datetime.fromtimestamp(gpx_data['tstamp'][i], tz = gpx_data['tzinfo']) if gpx_data['tstamp'] else None
+        time = datetime.fromtimestamp(gpx_data['tstamp'][i], tz=gpx_data['tzinfo']) if gpx_data['tstamp'] else None
         speed = gpx_speed[i] if write_speed else None
 
-        gpx_point = gpxpy.gpx.GPXTrackPoint(lat, lon, ele, time, speed = speed)
+        gpx_point = gpxpy.gpx.GPXTrackPoint(lat, lon, ele, time, speed=speed)
 
         gpx_segment.points.append(gpx_point)
 
     try:
         with open(gpx_file, 'w') as file:
-            file.write(gpx.to_xml(version = '1.0' if write_speed else '1.1'))
+            file.write(gpx.to_xml(version='1.0' if write_speed else '1.1'))
     except:
         exit('ERROR Failed to save {}'.format(gpx_file))
 
@@ -214,12 +213,12 @@ def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> No
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'interpolate GPX files using piecewise cubic Hermite splines')
+    parser = argparse.ArgumentParser(description='interpolate GPX files using piecewise cubic Hermite splines')
 
-    parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file')
-    parser.add_argument('-r', '--res', type = float, default = 1.0, help = 'interpolation resolution in meters (default: 1)')
-    parser.add_argument('-n', '--num', type = int, default = 0, help = 'force point count in output (default: disabled)')
-    parser.add_argument('-s', '--speed', action = 'store_true', help = 'save interpolated speed')
+    parser.add_argument('gpx_files', metavar='FILE', nargs='+', help='GPX file')
+    parser.add_argument('-r', '--res', type=float, default=1.0, help='interpolation resolution in meters (default: 1)')
+    parser.add_argument('-n', '--num', type=int, default=0, help='force point count in output (default: disabled)')
+    parser.add_argument('-s', '--speed', action='store_true', help='save interpolated speed')
 
     args = parser.parse_args()
 
@@ -238,7 +237,7 @@ def main():
 
             output_file = '{}_interpolated.gpx'.format(gpx_file[:-4])
 
-            gpx_write(output_file, gpx_data_interp, write_speed = args.speed)
+            gpx_write(output_file, gpx_data_interp, write_speed=args.speed)
 
             print('Saved {} trackpoints to {}'.format(len(gpx_data_interp['lat']), output_file))
 
