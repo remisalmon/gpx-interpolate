@@ -51,7 +51,7 @@ where:
 
 ## Test
 
-Run `test/test.sh`
+Run `./test.sh`
 
 ## Requirements
 

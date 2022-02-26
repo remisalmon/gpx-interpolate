@@ -1,27 +1,29 @@
 # doctest file for gpx_interpolate.py
+>>> import numpy as np
 >>> from gpx_interpolate import gpx_interpolate, gpx_calculate_distance, gpx_calculate_speed, gpx_remove_duplicates
 
->>> gpx_data = {'lat':[0.0, 1.1, 1.1], 'lon':[0.0, 1.1, 1.1], 'ele':[0.0, 1.1, 1.1], 'tstamp':[0.0, 1.1, 1.1], 'tzinfo':None}
+>>> gpx_data = {'lat':[0.0, 1.1, 1.1], 'lon':[0.0, 1.1, 1.1], 'ele':None, 'tstamp':[0.0, 1.1, 1.1], 'tzinfo':None}
+>>> DIST, TIME, RES, NUM = 172973.4, 1.1, 10.0, 10
 
 ## test gpx_interpolate
->>> gpx_interpolate(gpx_data, num = -1)
+>>> gpx_interpolate(gpx_data, res=0.0)
 Traceback (most recent call last):
     ...
 ValueError: ...
 
->>> gpx_interpolate(gpx_data, res = 0.0)
+>>> gpx_interpolate(gpx_data, num=-1)
 Traceback (most recent call last):
     ...
 ValueError: ...
 
->>> gpx_data_interp = gpx_interpolate(gpx_data, num = 10)
+>>> gpx_data_interp = gpx_interpolate(gpx_data, res=RES)
 
->>> len(gpx_data_interp['lat']) == len(gpx_data_interp['lon']) == len(gpx_data_interp['ele']) == len(gpx_data_interp['tstamp']) == 10
+>>> len(gpx_data_interp['lat']) == len(gpx_data_interp['lon']) == len(gpx_data_interp['tstamp']) == np.ceil(DIST/RES)
 True
 
->>> gpx_data_interp = gpx_interpolate(gpx_data, res = 10.0)
+>>> gpx_data_interp = gpx_interpolate(gpx_data, num=NUM)
 
->>> len(gpx_data_interp['lat']) == len(gpx_data_interp['lon']) == len(gpx_data_interp['ele']) == len(gpx_data_interp['tstamp']) == 17298
+>>> len(gpx_data_interp['lat']) == len(gpx_data_interp['lon']) == len(gpx_data_interp['tstamp']) == NUM
 True
 
 >>> abs(gpx_data_interp['lat'][0]-gpx_data['lat'][0]) < 1e-6
@@ -45,7 +47,7 @@ True
 >>> gpx_dist[0] == gpx_dist[2] == 0.0
 True
 
->>> int(gpx_dist[1]) == 172973
+>>> np.round(gpx_dist[1], decimals=1) == DIST
 True
 
 ## test gpx_calculate_speed
@@ -57,11 +59,11 @@ True
 >>> gpx_speed[0] == gpx_speed[2] == 0.0
 True
 
->>> int(gpx_speed[1]) == 157248
+>>> np.round(gpx_speed[1], decimals=1) == np.round(DIST/TIME, decimals=1)
 True
 
 ## test gpx_remove_duplicates
 >>> gpx_data = gpx_remove_duplicates(gpx_data)
 
->>> len(gpx_data['lat']) == len(gpx_data['lon']) == len(gpx_data['ele']) == len(gpx_data['tstamp']) == 2
+>>> len(gpx_data['lat']) == len(gpx_data['lon']) == len(gpx_data['tstamp']) == 2
 True
