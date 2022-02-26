@@ -32,7 +32,7 @@ gpx_data = {'lat':lat,
             'tstamp':tstamp,
             'tzinfo':tzinfo}
 
-gpx_data_interp = gpx_interpolate(gpx_data, res = 1.0, num = 0)
+gpx_data_interp = gpx_interpolate(gpx_data, res=1.0)
 ```
 
 where:
@@ -40,20 +40,21 @@ where:
 * `ele` (optional) is the trackpoints elevation (in meter)
 * `tstamp` (optional) is the trackpoints timestamps (in second)
 * `tzinfo` (optional) is the trackpoints timezone as a `datetime.tzinfo` subclass instance (`None` for UTC)
-* `res` (optional) is the interpolation resolution in meters: disabled if `num > 0`
-* `num` (optional) is the number of trackpoints of the interpolated data: `0` to disable (default)
+* `res` is the interpolation resolution in meters (`1.0` by default, disabled if `num` is passed)
+* `num` (optional) is the number of trackpoints of the interpolated data (`None` by default)
 
-`ele`, `tstamp` and `tzinfo` are optional and in that case must be set to `None`
+`ele`, `tstamp` and `tzinfo` are optional and can be set to `None`.
 
 ### Example
 :black_circle: = input GPX data, :red_circle: = interpolated GPX data  
 ![plot.png](plot.png)
 
-## Tests
+## Test
 
 Run `test/test.sh`
 
 ## Requirements
+
 ```
 gpxpy==1.5.0
 scipy==1.8.0
