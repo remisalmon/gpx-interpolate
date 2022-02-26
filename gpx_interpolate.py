@@ -57,9 +57,9 @@ def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: Optional[int] = No
     xi = np.cumsum(_gpx_dist)
     yi = np.array([_gpx_data[i] for i in ('lat', 'lon', 'ele', 'tstamp') if _gpx_data[i]])
 
-    num = num if num else 1+int(xi[-1]/res+0.5)
+    num = num if num is not None else int(np.ceil(xi[-1]/res))
 
-    x = np.linspace(xi[0], xi[-1], num)
+    x = np.linspace(xi[0], xi[-1], num=num, endpoint=True)
     y = pchip_interpolate(xi, yi, x, axis=1)
 
     gpx_data_interp = {'lat':list(y[0, :]),
