@@ -26,7 +26,7 @@ import gpxpy
 import numpy as np
 
 from datetime import datetime, tzinfo
-from scipy.interpolate import interp1d, splprep, splev
+from scipy.interpolate import pchip_interpolate
 
 from typing import Dict, List, Union
 
@@ -38,49 +38,35 @@ EARTH_RADIUS = 6371e3 # meter
 EPS = 1e-6 # second
 
 # functions
-def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0, deg: int = 1) -> GPXData:
+def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: int = 0) -> GPXData:
     """
-    Returns gpx_data interpolated with a spatial resolution res using a spline of degree deg
+    Returns gpx_data interpolated with a spatial resolution res using piecewise cubic Hermite splines
 
     if num > 0, gpx_data is interpolated to num points and res is ignored
     """
 
-    if not 1 <= deg <= 5:
-        raise ValueError('deg must be in [1-5]')
-
-    if not len(gpx_data['lat']) > deg:
-        raise ValueError('number of data points must be > deg')
+    if res <= 0.0:
+        raise ValueError('res must be > 0.0')
 
     if num < 0:
         raise ValueError('num must be >= 0')
 
-    if res <= 0.0:
-        raise ValueError('res must be > 0')
-
-    # interpolate spatial data
     _gpx_data = gpx_remove_duplicates(gpx_data)
 
     _gpx_dist = gpx_calculate_distance(_gpx_data, use_ele = True)
 
-    x = [_gpx_data[i] for i in ('lat', 'lon', 'ele') if _gpx_data[i]]
+    xi = np.cumsum(_gpx_dist)
+    yi = np.array([_gpx_data[i] for i in ('lat', 'lon', 'ele', 'tstamp') if _gpx_data[i]])
 
-    tck, _ = splprep(x, u = np.cumsum(_gpx_dist), k = deg, s = 0)
+    num = num if num else 1+int(xi[-1]/res+0.5)
 
-    num = num if num else 1+int(np.sum(_gpx_dist)/res+0.5)
+    x = np.linspace(xi[0], xi[-1], num)
+    y = pchip_interpolate(xi, yi, x, axis = 1)
 
-    u_interp = np.linspace(0, np.sum(_gpx_dist), num)
-    x_interp = splev(u_interp, tck)
-
-    # interpolate time data linearly to preserve monotonicity
-    if _gpx_data['tstamp']:
-        f = interp1d(np.cumsum(_gpx_dist), _gpx_data['tstamp'], fill_value = 'extrapolate')
-
-        tstamp_interp = f(u_interp)
-
-    gpx_data_interp = {'lat':list(x_interp[0]),
-                       'lon':list(x_interp[1]),
-                       'ele':list(x_interp[2]) if gpx_data['ele'] else None,
-                       'tstamp':list(tstamp_interp) if gpx_data['tstamp'] else None,
+    gpx_data_interp = {'lat':list(y[0, :]),
+                       'lon':list(y[1, :]),
+                       'ele':list(y[2, :]) if gpx_data['ele'] else None,
+                       'tstamp':list(y[-1, :]) if gpx_data['tstamp'] else None,
                        'tzinfo':gpx_data['tzinfo']}
 
     return gpx_data_interp
@@ -228,10 +214,9 @@ def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> No
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description = 'interpolate GPX files using linear or spline interpolation')
+    parser = argparse.ArgumentParser(description = 'interpolate GPX files using piecewise cubic Hermite splines')
 
     parser.add_argument('gpx_files', metavar = 'FILE', nargs = '+', help = 'GPX file')
-    parser.add_argument('-d', '--deg', type = int, default = 1, help = 'interpolation degree, 1=linear, 2-5=spline (default: 1)')
     parser.add_argument('-r', '--res', type = float, default = 1.0, help = 'interpolation resolution in meters (default: 1)')
     parser.add_argument('-n', '--num', type = int, default = 0, help = 'force point count in output (default: disabled)')
     parser.add_argument('-s', '--speed', action = 'store_true', help = 'save interpolated speed')
@@ -249,7 +234,7 @@ def main():
             if not len(gpx_data_nodup['lat']) == len(gpx_data['lat']):
                 print('Removed {} duplicate trackpoint(s)'.format(len(gpx_data['lat'])-len(gpx_data_nodup['lat'])))
 
-            gpx_data_interp = gpx_interpolate(gpx_data_nodup, args.res, args.num, args.deg)
+            gpx_data_interp = gpx_interpolate(gpx_data_nodup, args.res, args.num)
 
             output_file = '{}_interpolated.gpx'.format(gpx_file[:-4])
 
