@@ -217,7 +217,7 @@ def main():
 
     parser.add_argument('gpx_files', metavar='FILE', nargs='+', help='GPX file')
     parser.add_argument('-r', '--res', type=float, default=1.0, help='interpolation resolution in meters (default: 1)')
-    parser.add_argument('-n', '--num', type=int, default=0, help='force point count in output (default: disabled)')
+    parser.add_argument('-n', '--num', type=int, default=None, help='force point count in output (default: disabled)')
     parser.add_argument('-s', '--speed', action='store_true', help='save interpolated speed')
 
     args = parser.parse_args()
