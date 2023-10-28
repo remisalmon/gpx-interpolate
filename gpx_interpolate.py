@@ -1,41 +1,19 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2019 Remi Salmon
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 # imports
 import gpxpy
 
 import numpy as np
 
 from datetime import datetime, tzinfo
-from scipy.interpolate import pchip_interpolate
-
 from typing import Dict, List, Union, Optional
 
+from scipy.interpolate import pchip_interpolate
+
 # types
-GPXData = Dict[str, Union[List[float], tzinfo]]
+GPXData = Dict[str, Union[List[float], tzinfo, None]]
 
 # globals
-EARTH_RADIUS = 6371e3 # meter
-EPS = 1e-6 # second
+EARTH_RADIUS = 6371e3 # meters
+EPS = 1e-6 # seconds
 
 # functions
 def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: Optional[int] = None) -> GPXData:
@@ -45,11 +23,8 @@ def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: Optional[int] = No
     if num is passed, gpx_data is interpolated to num points and res is ignored.
     """
 
-    if res <= 0.0:
-        raise ValueError('res must be > 0.0')
-
-    if num is not None and num < 0:
-        raise ValueError('num must be >= 0')
+    if all(gpx_data[i] in (None, []) for i in ('lat', 'lon', 'ele', 'tstamp')):
+        return gpx_data
 
     _gpx_data = gpx_remove_duplicates(gpx_data)
     _gpx_dist = gpx_calculate_distance(_gpx_data, use_ele=True)
@@ -62,19 +37,19 @@ def gpx_interpolate(gpx_data: GPXData, res: float = 1.0, num: Optional[int] = No
     x = np.linspace(xi[0], xi[-1], num=num, endpoint=True)
     y = pchip_interpolate(xi, yi, x, axis=1)
 
-    gpx_data_interp = {'lat':list(y[0, :]),
-                       'lon':list(y[1, :]),
-                       'ele':list(y[2, :]) if gpx_data['ele'] else None,
-                       'tstamp':list(y[-1, :]) if gpx_data['tstamp'] else None,
-                       'tzinfo':gpx_data['tzinfo']}
+    gpx_data_interp = {'lat': list(y[0, :]),
+                       'lon': list(y[1, :]),
+                       'ele': list(y[2, :]) if gpx_data['ele'] else None,
+                       'tstamp': list(y[-1, :]) if gpx_data['tstamp'] else None,
+                       'tzinfo': gpx_data['tzinfo']}
 
     return gpx_data_interp
 
 def gpx_calculate_distance(gpx_data: GPXData, use_ele: bool = True) -> List[float]:
     """
-    Returns the distance between GPX trackpoints
+    Returns the distance between GPX trackpoints.
 
-    if use_ele is True and gpx_data['ele'] is not None, the elevation data is used to compute the distance
+    if use_ele is True and gpx_data['ele'] is not None, the elevation data is used to compute the distance.
     """
 
     gpx_dist = np.zeros(len(gpx_data['lat']))
@@ -102,7 +77,9 @@ def gpx_calculate_distance(gpx_data: GPXData, use_ele: bool = True) -> List[floa
     return gpx_dist.tolist()
 
 def gpx_calculate_speed(gpx_data: GPXData) -> List[float]:
-    """Returns the speed between GPX trackpoints"""
+    """
+    Returns the speed between GPX trackpoints.
+    """
 
     gpx_dist = gpx_calculate_distance(gpx_data, use_ele=True)
 
@@ -114,7 +91,9 @@ def gpx_calculate_speed(gpx_data: GPXData) -> List[float]:
     return gpx_speed.tolist()
 
 def gpx_remove_duplicates(gpx_data: GPXData) -> GPXData:
-    """Returns gpx_data where duplicate trackpoints are removed"""
+    """
+    Returns gpx_data where duplicate trackpoints are removed.
+    """
 
     gpx_dist = gpx_calculate_distance(gpx_data, use_ele=False)
 
@@ -123,17 +102,20 @@ def gpx_remove_duplicates(gpx_data: GPXData) -> GPXData:
     if len(i_dist) == len(gpx_dist):
         return gpx_data
 
-    gpx_data_nodup = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':gpx_data['tzinfo']}
+    gpx_data_nodup = {'lat': [], 'lon': [], 'ele': [], 'tstamp': [], 'tzinfo': gpx_data['tzinfo']}
 
     for k in ('lat', 'lon', 'ele', 'tstamp'):
         gpx_data_nodup[k] = [gpx_data[k][i] for i in i_dist] if gpx_data[k] else None
 
     return gpx_data_nodup
 
-def gpx_read(gpx_file: str) -> GPXData:
-    """Returns a GPXData structure from a GPX file"""
 
-    gpx_data = {'lat':[], 'lon':[], 'ele':[], 'tstamp':[], 'tzinfo':None}
+def gpx_read(gpx_file: str) -> GPXData:
+    """
+    Returns a GPXData structure from a GPX file.
+    """
+
+    gpx_data = {'lat': [], 'lon': [], 'ele': [], 'tstamp': [], 'tzinfo': None}
 
     i = 0
     i_latlon = []
@@ -174,8 +156,11 @@ def gpx_read(gpx_file: str) -> GPXData:
 
     return gpx_data
 
+
 def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> None:
-    """Writes a GPX file with a GPXData structure, including speed if write_speed is True"""
+    """
+    Writes a GPX file with a GPXData structure, including speed if write_speed is True.
+    """
 
     if write_speed:
         if not gpx_data['tstamp']:
@@ -208,6 +193,7 @@ def gpx_write(gpx_file: str, gpx_data: GPXData, write_speed: bool = False) -> No
         exit('ERROR Failed to save {}'.format(gpx_file))
 
     return
+
 
 # main
 def main():
