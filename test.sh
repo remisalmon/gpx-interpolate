@@ -1,5 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-python -m doctest -o IGNORE_EXCEPTION_DETAIL -f test/test.txt
+python3.8 -m venv venv
 
-[ $? -eq 0 ] && echo 'Test passed.'
+source venv/bin/activate
+
+python -m pip install -U pip setuptools
+python -m pip install -r requirements.txt
+
+python -m doctest -o IGNORE_EXCEPTION_DETAIL -f tests/tests.txt || exit 1

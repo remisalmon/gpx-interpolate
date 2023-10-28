@@ -1,0 +1,78 @@
+# doctest file for gpx_interpolate.py
+>>> import numpy as np
+>>> from gpx_interpolate import gpx_interpolate, gpx_calculate_distance, gpx_calculate_speed, gpx_remove_duplicates
+
+>>> test_data = {'lat': [0.0, 1.1, 1.1], 'lon': [0.0, 1.1, 1.1], 'ele': None, 'tstamp': [0.0, 1.1, 1.1], 'tzinfo': None}
+>>> empty_data = {'lat': [], 'lon': [], 'ele': None, 'tstamp': None, 'tzinfo': None}
+>>> DIST, TIME, RES, NUM = 172973.4, 1.1, 10.0, 10
+
+## test gpx_interpolate
+>>> gpx_interpolate(empty_data) == gpx_interpolate(empty_data, res=RES) == gpx_interpolate(empty_data, num=NUM) == empty_data
+True
+
+>>> gpx_interpolate(test_data, res=0.0)
+Traceback (most recent call last):
+    ...
+OverflowError: ...
+
+>>> gpx_interpolate(test_data, res=-1.0)
+Traceback (most recent call last):
+    ...
+ValueError: ...
+
+>>> gpx_interpolate(test_data, num=-1)
+Traceback (most recent call last):
+    ...
+ValueError: ...
+
+>>> test_data_interp = gpx_interpolate(test_data, res=RES)
+
+>>> len(test_data_interp['lat']) == len(test_data_interp['lon']) == len(test_data_interp['tstamp']) == int(np.ceil(DIST/RES))
+True
+
+>>> test_data_interp = gpx_interpolate(test_data, num=NUM)
+
+>>> len(test_data_interp['lat']) == len(test_data_interp['lon']) == len(test_data_interp['tstamp']) == NUM
+True
+
+>>> abs(test_data_interp['lat'][0]-test_data['lat'][0]) < 1e-6
+True
+
+>>> abs(test_data_interp['lat'][-1]-test_data['lat'][-1]) < 1e-6
+True
+
+>>> abs(test_data_interp['lon'][0]-test_data['lon'][0]) < 1e-6
+True
+
+>>> abs(test_data_interp['lon'][-1]-test_data['lon'][-1]) < 1e-6
+True
+
+## test gpx_calculate_distance
+>>> test_dist = gpx_calculate_distance(test_data)
+
+>>> len(test_dist) == 3
+True
+
+>>> test_dist[0] == test_dist[2] == 0.0
+True
+
+>>> np.round(test_dist[1], decimals=1) == DIST
+True
+
+## test gpx_calculate_speed
+>>> test_speed = gpx_calculate_speed(test_data)
+
+>>> len(test_speed) == 3
+True
+
+>>> test_speed[0] == test_speed[2] == 0.0
+True
+
+>>> np.round(test_speed[1], decimals=1) == np.round(DIST/TIME, decimals=1)
+True
+
+## test gpx_remove_duplicates
+>>> test_data = gpx_remove_duplicates(test_data)
+
+>>> len(test_data['lat']) == len(test_data['lon']) == len(test_data['tstamp']) == 2
+True
